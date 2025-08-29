@@ -1,5 +1,3 @@
-insert into albums(name, description, cover_image_url)
-values ('Launch Day', 'Photos from kickoff', null);
 
 -- Seed a couple of published events
 INSERT INTO events

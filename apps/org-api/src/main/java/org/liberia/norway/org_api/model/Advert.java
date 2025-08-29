@@ -4,17 +4,19 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.OffsetDateTime;
 
-@Entity @Table(name="albums")
+@Entity @Table(name="adverts")
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
-public class Album {
+public class Advert {
   @Id @GeneratedValue(strategy=GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable=false, unique=true, length=120) private String slug;
   @Column(nullable=false, length=200) private String title;
-  @Lob private String description; // maps to CLOB
-  private String coverImageUrl;
-  @Column(nullable=false) private boolean isPublished = false;
+  @Column(nullable=false, length=500) private String imageUrl;
+  @Column(length=500) private String targetUrl;
+  @Column(nullable=false, length=50) private String placement; // e.g. HEADER/SIDEBAR
+  private OffsetDateTime startsAt;
+  private OffsetDateTime endsAt;
+  @Column(nullable=false) private boolean isActive = false;
 
   @Column(nullable=false) private OffsetDateTime createdAt = OffsetDateTime.now();
   @Column(nullable=false) private OffsetDateTime updatedAt = OffsetDateTime.now();

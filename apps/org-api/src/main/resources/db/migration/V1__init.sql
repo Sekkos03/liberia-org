@@ -1,25 +1,30 @@
--- Albums first (referenced by Events and Photos)
+-- === Albums & Photos ===
 create table if not exists albums (
-  id               bigserial primary key,
-  name             varchar(200) not null,
-  description      text,
-  cover_image_url  text,
-  created_at       TIMESTAMP not null default now()
+  id              bigserial primary key,
+  slug            varchar(120) not null unique,
+  title           varchar(200) not null,
+  description     CLOB,
+  cover_image_url varchar(500),
+  is_published    boolean not null default false,
+  created_at      timestamp not null default now(),
+  updated_at      timestamp not null default now()
 );
-
 create index if not exists idx_albums_created_at on albums(created_at desc);
 
--- Photos
 create table if not exists photos (
-  id           bigserial primary key,
-  album_id     bigint not null references albums(id) on delete cascade,
-  image_url    text not null,
-  caption      text,
-  taken_at     TIMESTAMP,
-  uploaded_at  TIMESTAMP not null default now()
+  id              bigserial primary key,
+  album_id        bigint not null,
+  title           varchar(200),
+  description     CLOB,
+  image_url       varchar(500) not null,
+  sort_order      int not null default 0,
+  taken_at        timestamp,
+  created_at      timestamp not null default now(),
+  updated_at      timestamp not null default now(),
+  constraint fk_photos_album foreign key (album_id) references albums(id) on delete cascade
 );
 
-create index if not exists idx_photos_album_id on photos(album_id);
+create index if not exists idx_photos_album_order on photos(album_id, sort_order);
 
 -- Events
 CREATE TABLE if not exists events (
@@ -47,22 +52,20 @@ ALTER TABLE events
 create index if not exists idx_events_start_at on events(start_at);
 create index if not exists idx_events_published on events(is_published);
 
--- Adverts
+-- === Adverts ===
 create table if not exists adverts (
-  id               bigserial primary key,
-  title            varchar(200) not null,
-  image_url        text not null,
-  body             text,
-  link_url         text,
-  contact_email    varchar(320),
-  starts_on        date,
-  ends_on          date,
-  is_published     boolean not null default false,
-  created_at       TIMESTAMP not null default now(),
-  updated_at       TIMESTAMP not null default now()
+  id              bigserial primary key,
+  title           varchar(200) not null,
+  image_url       varchar(500),
+  target_url      varchar(500),
+  placement       varchar(50) not null, -- e.g. HEADER, SIDEBAR, FOOTER
+  starts_at       timestamp,
+  ends_at         timestamp,
+  is_active       boolean not null default false,
+  created_at      timestamp not null default now(),
+  updated_at      timestamp not null default now()
 );
-
-create index if not exists idx_adverts_active on adverts(is_published, starts_on, ends_on);
+create index if not exists idx_adverts_active_time on adverts(is_active, starts_at, ends_at);
 
 -- Suggestions (Postbox)
 create table if not exists suggestions (
@@ -90,10 +93,39 @@ create table if not exists people (
 
 create index if not exists idx_people_order on people(order_index);
 
--- Pages (structured content as JSON text for flexibility)
+-- === Pages ===
 create table if not exists pages (
+  id              bigserial primary key,
+  slug            varchar(120) not null unique,
+  title           varchar(200) not null,
+  content         CLOB not null,
+  is_published    boolean not null default false,
+  updated_at      timestamp not null default now(),
+  created_at      timestamp not null default now()
+);
+
+
+
+
+-- === Membership form submissions ===
+create table if not exists membership_applications (
+  id              bigserial primary key,
+  full_name       varchar(200) not null,
+  email           varchar(320) not null,
+  phone           varchar(50),
+  address         varchar(400),
+  occupation      varchar(200),
+  message         CLOB,
+  created_at      timestamp not null default now()
+);
+create index if not exists idx_membership_created on membership_applications(created_at);
+
+-- === Admin Users (stub) ===
+create table if not exists users (
   id          bigserial primary key,
-  page_key    varchar(50) not null unique, -- 'home','about','guidelines','constitution','contactWidget'
-  content_json text,
-  updated_at  TIMESTAMP not null default now()
+  username    varchar(100) not null unique,
+  password    varchar(200) not null,
+  role        varchar(50) not null default 'ADMIN', -- simple single-role model for now
+  enabled     boolean not null default true,
+  created_at  timestamp not null default now()
 );

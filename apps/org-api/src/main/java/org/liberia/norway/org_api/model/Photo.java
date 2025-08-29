@@ -2,19 +2,23 @@ package org.liberia.norway.org_api.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 
-@Entity @Table(name="albums")
+@Entity @Table(name="photos")
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
-public class Album {
+public class Photo {
   @Id @GeneratedValue(strategy=GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable=false, unique=true, length=120) private String slug;
-  @Column(nullable=false, length=200) private String title;
-  @Lob private String description; // maps to CLOB
-  private String coverImageUrl;
-  @Column(nullable=false) private boolean isPublished = false;
+  @ManyToOne(optional=false) @JoinColumn(name="album_id")
+  private Album album;
+
+  private String title;
+  @Lob private String description;
+  @Column(nullable=false) private String imageUrl;
+  @Column(nullable=false) private int sortOrder = 0;
+  private Instant takenAt;
 
   @Column(nullable=false) private OffsetDateTime createdAt = OffsetDateTime.now();
   @Column(nullable=false) private OffsetDateTime updatedAt = OffsetDateTime.now();
