@@ -1,11 +1,14 @@
 package org.liberia.norway.org_api.config;
 
+import java.util.List;
+
 import org.liberia.norway.org_api.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,6 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,8 +42,10 @@ PasswordEncoder passwordEncoder() {
   @Bean
 SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws Exception {
       http.csrf(csrf -> csrf.disable());
+      http.cors(Customizer.withDefaults());
       http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
       http.authorizeHttpRequests(req -> req
+        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
         .requestMatchers(
           "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
           ).permitAll()
@@ -66,7 +74,17 @@ SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws 
 );
       return http.build();
 }
-
+@Bean
+CorsConfigurationSource corsConfigurationSource() {
+  var c = new CorsConfiguration();
+  c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174"));
+  c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+  c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
+  c.setExposedHeaders(List.of("Location"));
+  var s = new UrlBasedCorsConfigurationSource();
+  s.registerCorsConfiguration("/**", c);
+  return s;
+}
  @Bean
   AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
     return cfg.getAuthenticationManager();

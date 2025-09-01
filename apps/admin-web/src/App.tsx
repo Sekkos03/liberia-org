@@ -1,31 +1,19 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
+import { Outlet, Link, NavLink } from "react-router-dom";
 // 👇 file is AdminEvent.tsx (singular)
-import AdminEvents from "./pages/events/AdminEvent";
-import { useAuth } from "./auth/AuthProvider";
-import type { JSX } from "react";
-
-function Protected({ children }: { children: JSX.Element }) {
-  const { token } = useAuth();
-  if (!token) return <Navigate to="/login" replace />;
-  return children;
-}
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/admin/events"
-          element={
-            <Protected>
-              <AdminEvents />
-            </Protected>
-          }
-        />
-        <Route path="*" element={<Navigate to="/admin/events" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <div className="min-h-screen">
+      <header className="border-b px-4 py-3 flex items-center gap-6">
+        <Link to="/" className="font-semibold">Admin</Link>
+        <nav className="flex gap-4">
+          <NavLink to="/events">Events</NavLink>
+          {/* add more links */}
+        </nav>
+      </header>
+      <main className="p-4">
+        <Outlet />
+      </main>
+    </div>
   );
 }

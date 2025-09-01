@@ -12,7 +12,8 @@ async function handle<T>(res: Response): Promise<T> {
 
 export function apiGet<T>(path: string): Promise<T> {
   return fetch(`${API_BASE}${path}`, {
-    credentials: "include",
-    headers: { "Accept": "application/json" },
+    // 👇 public site should not send cookies/auth by default
+    credentials: "omit",
+    headers: { Accept: "application/json" },
   }).then(handle<T>);
 }

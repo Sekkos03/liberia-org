@@ -1,4 +1,3 @@
-// admin-web/src/main.tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
@@ -16,19 +15,13 @@ const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   {
     path: "/",
-    element: <ProtectedRoute />,
+    element: <ProtectedRoute />,   // <-- no BrowserRouter here
     children: [
       {
-        element: <App />,
+        element: <App />,          // shell layout (nav/sidebar/etc.)
         children: [
-          { index: true, element: <div>Admin dashboard</div> },
+          { index: true, element: <AdminEvents /> },
           { path: "events", element: <AdminEvents /> },
-          { path: "albums", element: <div>Albums & Photos (kommer)</div> },
-          { path: "adverts", element: <div>Adverts (kommer)</div> },
-          { path: "pages", element: <div>Pages (kommer)</div> },
-          { path: "suggestions", element: <div>Inbox (kommer)</div> },
-          { path: "people", element: <div>Executives (kommer)</div> },
-          { path: "settings", element: <div>Settings (kommer)</div> },
         ],
       },
     ],

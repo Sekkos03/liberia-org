@@ -1,41 +1,42 @@
 // admin-web/src/auth/AuthProvider.tsx
-import { createContext, useContext, useMemo, useState } from "react";
-import { apiPost, setToken, getToken } from "../lib/api";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 type AuthCtx = {
   token: string | null;
-  login: (username: string, password: string) => Promise<void>;
+  isAuthed: boolean;
+  login: (jwt: string) => void;
   logout: () => void;
 };
-const Ctx = createContext<AuthCtx | null>(null);
+
+const AuthContext = createContext<AuthCtx | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setTok] = useState<string | null>(getToken());
+  const [token, setToken] = useState<string | null>(null);
 
-  const value = useMemo<AuthCtx>(
-    () => ({
-      token,
-      async login(username, password) {
-        const res = await apiPost<{ token: string }>("/api/auth/login", {
-          username,
-          password,
-        });
-        setToken(res.token);
-        setTok(res.token);
-      },
-      logout() {
-        setToken(null);
-        setTok(null);
-      },
-    }),
-    [token]
-  );
+  // load persisted token on boot
+  useEffect(() => {
+    const t = localStorage.getItem("jwt");
+    if (t) setToken(t);
+  }, []);
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  const value = useMemo<AuthCtx>(() => ({
+    token,
+    isAuthed: !!token,
+    login: (jwt: string) => {
+      setToken(jwt);
+      localStorage.setItem("jwt", jwt);
+    },
+    logout: () => {
+      setToken(null);
+      localStorage.removeItem("jwt");
+    },
+  }), [token]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const v = useContext(Ctx);
-  if (!v) throw new Error("AuthProvider missing");
-  return v;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within <AuthProvider>");
+  return ctx;
 }
