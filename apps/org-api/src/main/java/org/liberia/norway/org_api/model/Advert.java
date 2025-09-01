@@ -1,23 +1,71 @@
 package org.liberia.norway.org_api.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
 import java.time.OffsetDateTime;
 
-@Entity @Table(name="adverts")
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Entity
+@Table(name = "adverts", indexes = {
+        @Index(name = "idx_adverts_slug", columnList = "slug", unique = true),
+        @Index(name = "idx_adverts_active", columnList = "active")
+})
+@Getter
+@Setter
+@ToString
 public class Advert {
-  @Id @GeneratedValue(strategy=GenerationType.IDENTITY)
-  private Long id;
 
-  @Column(nullable=false, length=200) private String title;
-  @Column(nullable=false, length=500) private String imageUrl;
-  @Column(length=500) private String targetUrl;
-  @Column(nullable=false, length=50) private String placement; // e.g. HEADER/SIDEBAR
-  private OffsetDateTime startsAt;
-  private OffsetDateTime endsAt;
-  @Column(nullable=false) private boolean isActive = false;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable=false) private OffsetDateTime createdAt = OffsetDateTime.now();
-  @Column(nullable=false) private OffsetDateTime updatedAt = OffsetDateTime.now();
+    @Column(nullable = false, length = 120, unique = true)
+    private String slug;
+
+    @Column(nullable = false, length = 200)
+    private String title;
+
+    @Lob
+    private String description; // CLOB i SQL
+
+    @Column(name = "target_url", length = 512)
+    private String targetUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 40)
+    private Placement placement = Placement.SIDEBAR;
+
+    // Bildemetadata for opplastet annonse
+    @Column(name = "original_name", length = 255)
+    private String originalName;
+
+    @Column(name = "file_name", length = 255)
+    private String fileName;
+
+    @Column(name = "content_type", length = 100)
+    private String contentType;
+
+    @Column(name = "size_bytes")
+    private Long sizeBytes;
+
+    @Column(name = "image_url", length = 512)
+    private String imageUrl;
+
+    @Column(nullable = false)
+    private boolean active = false;
+
+    private OffsetDateTime startAt; // valgfritt tidsvindu
+    private OffsetDateTime endAt;
+
+    @Column(nullable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(nullable = false)
+    private OffsetDateTime updatedAt;
+
+    public enum Placement {
+        HOME_TOP, SIDEBAR, FOOTER, INLINE
+    }
 }

@@ -1,32 +1,38 @@
-import { Link } from "react-router-dom";
+// public-web/src/App.tsx
+import { Link, Outlet, useLocation } from "react-router-dom";
 
 export default function App() {
-  return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <header className="bg-[#162957] text-white">
-        <nav className="mx-auto max-w-5xl flex items-center gap-6 py-3">
-          <Link to="/">Home</Link>
-          <Link to="/forms">Forms</Link>
-          <Link to="/events">Events</Link>
-          <Link to="/adverts">Adverts</Link>
-          <Link to="/photos">Photos</Link>
-          <Link to="/post">Post</Link>
-          <Link to="/about">About us</Link>
-          <Link to="/contact">Contact</Link>
-        </nav>
-      </header>
+  const { pathname } = useLocation();
+  const NavLink = ({ to, label }: { to: string; label: string }) => (
+    <Link
+      to={to}
+      className={`px-3 py-2 rounded ${pathname === to ? "bg-black text-white" : "hover:bg-black/10"}`}
+    >
+      {label}
+    </Link>
+  );
 
-      <main className="mx-auto max-w-5xl py-24 text-center">
-        <h1 className="text-5xl font-bold">Liberian Organization</h1>
-        <p className="mt-3 text-lg">In union with Norway</p>
-        <div className="mt-10 flex items-center justify-center gap-4">
-          <Link className="rounded-md bg-[#162957] px-4 py-2 text-white" to="/forms">Join our community</Link>
-          <Link className="rounded-md border border-[#162957] px-4 py-2" to="/about">Learn more</Link>
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b">
+        <div className="max-w-5xl mx-auto p-3 flex gap-2 flex-wrap">
+          <NavLink to="/" label="Hjem" />
+          <NavLink to="/events" label="Arrangement" />
+          <NavLink to="/photos" label="Bilder" />
+          <NavLink to="/adverts" label="Annonser" />
+          <NavLink to="/forms" label="Medlemskap" />
+          <NavLink to="/post" label="Forslag" />
+          <NavLink to="/about" label="Om oss" />
+          <NavLink to="/contact" label="Kontakt" />
+        </div>
+      </header>
+      <main className="flex-1">
+        <div className="max-w-5xl mx-auto p-4">
+          <Outlet />
         </div>
       </main>
-
-      <footer className="bg-[#162957] py-6 text-center text-white">
-        Copyright © 2025 Liberia organization Oslo Norway | Webdesign by Sekou Kosiah
+      <footer className="border-t text-sm text-gray-500 p-4 text-center">
+        © Liberia Org
       </footer>
     </div>
   );
