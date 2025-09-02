@@ -70,12 +70,12 @@ export type EventDTO = {
   startAt: string | null; // ISO string from backend (OffsetDateTime)
   endAt: string | null;   // ISO string
   galleryAlbumId: number | null;
-  published: boolean;
+  isPublished: boolean;
   createdAt?: string | null;
   updatedAt?: string | null;
 };
 
-export type EventUpsert = {
+export type EventUpsertRequest = {
   slug: string;
   title: string;
   summary: string | null;
@@ -86,6 +86,7 @@ export type EventUpsert = {
   startAt: string | null; // send ISO (we convert from datetime-local in UI)
   endAt: string | null;
   galleryAlbumId: number | null;
+  isPublished: boolean | null;
 };
 
 
@@ -112,14 +113,14 @@ export async function listAdminEvents(
   return res.data;
 }
 
-export async function createEvent(payload: EventUpsert): Promise<EventDTO> {
+export async function createEvent(payload: EventUpsertRequest): Promise<EventDTO> {
   const res = await http.post<EventDTO>("/api/admin/events", payload);
   return res.data;
 }
 
 export async function updateEvent(
   id: number,
-  payload: EventUpsert
+  payload: EventUpsertRequest
 ): Promise<EventDTO> {
   const res = await http.put<EventDTO>(`/api/admin/events/${id}`, payload);
   return res.data;

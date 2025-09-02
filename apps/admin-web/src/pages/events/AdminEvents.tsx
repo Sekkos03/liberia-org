@@ -1,38 +1,17 @@
-// admin-web/src/pages/events/AdminEvents.tsx
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  listAdminEvents,
   createEvent,
-  updateEvent,
   deleteEvent,
+  listAdminEvents,
   setEventPublished,
+  updateEvent,
   type EventDTO,
-  type EventUpsert,
-  type Page,
-} from "../../lib/api";
+  type EventUpsertRequest,
+} from '../../lib/api';
 
-/* ---------- utils for datetime-local <-> ISO (Offset/UTC 'Z') ---------- */
-function isoToLocalInput(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-}
-function localInputToIso(v?: string | null): string | null {
-  if (!v) return null;
-  // interpret local time and send as UTC ISO (Z) — backend OffsetDateTime handles it
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? null : d.toISOString();
-}
-
-/* --------------------------- local form model --------------------------- */
-type FormValues = {
+type FormState = {
+  id?: number | null;
   slug: string;
   title: string;
   summary: string;
@@ -40,375 +19,372 @@ type FormValues = {
   location: string;
   coverImageUrl: string;
   rsvpUrl: string;
-  startAt: string; // datetime-local value
-  endAt: string; // datetime-local value
-  galleryAlbumId: string; // keep as string for input; convert to number|null on submit
+  startAt: string; // ISO string
+  endAt: string;   // ISO string
+  galleryAlbumId: string; // keep string for input
+  isPublished: boolean;
 };
 
-const emptyForm: FormValues = {
-  slug: "",
-  title: "",
-  summary: "",
-  description: "",
-  location: "",
-  coverImageUrl: "",
-  rsvpUrl: "",
-  startAt: "",
-  endAt: "",
-  galleryAlbumId: "",
-};
+const emptyForm = (): FormState => ({
+  id: null,
+  slug: '',
+  title: '',
+  summary: '',
+  description: '',
+  location: '',
+  coverImageUrl: '',
+  rsvpUrl: '',
+  startAt: '',
+  endAt: '',
+  galleryAlbumId: '',
+  isPublished: false,
+});
+
+// 👇 shared, high-contrast input style (light + dark)
+const inputCls =
+  'w-full rounded-lg border px-3 py-2 ' +
+  'bg-white text-gray-900 placeholder-gray-400 border-gray-300 ' +
+  'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ' +
+  'dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 dark:border-gray-700';
+
+const btnBase =
+  'px-2 py-1 rounded border hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700';
 
 export default function AdminEvents() {
   const qc = useQueryClient();
+  const [page] = useState(0);
+  const [size] = useState(20);
+  const [editing, setEditing] = useState<FormState>(emptyForm());
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const q = useQuery<Page<EventDTO>>({
-    queryKey: ["adminEvents", 0],
-    queryFn: () => listAdminEvents(0, 50),
+  const q = useQuery({
+    queryKey: ['admin-events', page, size],
+    queryFn: () => listAdminEvents(page, size),
   });
 
-  const mPublish = useMutation({
-    mutationFn: ({ id, value }: { id: number; value: boolean }) =>
-      setEventPublished(id, value),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminEvents"] }),
-  });
+  const rows: EventDTO[] = useMemo(() => q.data?.content ?? [], [q.data]);
 
-  const mCreate = useMutation({
-    mutationFn: (payload: EventUpsert) => createEvent(payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["adminEvents"] });
-      closeForm();
-    },
-  });
+  const onClose = () => {
+    setOpen(false);
+    setEditing(emptyForm());
+    setError(null);
+  };
 
-  const mUpdate = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: EventUpsert }) =>
-      updateEvent(id, payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["adminEvents"] });
-      closeForm();
-    },
-  });
-
-  const mDelete = useMutation({
-    mutationFn: (id: number) => deleteEvent(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminEvents"] }),
-  });
-
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<EventDTO | null>(null);
-  const [form, setForm] = useState<FormValues>(emptyForm);
-
-  function openCreate() {
-    setEditing(null);
-    setForm(emptyForm);
-    setShowForm(true);
-  }
-  function openEdit(ev: EventDTO) {
-    setEditing(ev);
-    setForm({
-      slug: ev.slug ?? "",
-      title: ev.title ?? "",
-      summary: ev.summary ?? "",
-      description: ev.description ?? "",
-      location: ev.location ?? "",
-      coverImageUrl: ev.coverImageUrl ?? "",
-      rsvpUrl: ev.rsvpUrl ?? "",
-      startAt: isoToLocalInput(ev.startAt),
-      endAt: isoToLocalInput(ev.endAt),
-      galleryAlbumId: ev.galleryAlbumId ? String(ev.galleryAlbumId) : "",
+  const onEdit = (e: EventDTO) => {
+    setEditing({
+      id: e.id,
+      slug: e.slug ?? '',
+      title: e.title ?? '',
+      summary: e.summary ?? '',
+      description: e.description ?? '',
+      location: e.location ?? '',
+      coverImageUrl: e.coverImageUrl ?? '',
+      rsvpUrl: e.rsvpUrl ?? '',
+      startAt: e.startAt ?? '',
+      endAt: e.endAt ?? '',
+      galleryAlbumId: e.galleryAlbumId != null ? String(e.galleryAlbumId) : '',
+      isPublished: !!e.isPublished,
     });
-    setShowForm(true);
-  }
-  function closeForm() {
-    setShowForm(false);
-    setEditing(null);
-    setForm(emptyForm);
-  }
+    setOpen(true);
+  };
 
-  function togglePublished(ev: EventDTO) {
-    mPublish.mutate({ id: ev.id, value: !ev.published });
-  }
+  const createM = useMutation({
+    mutationFn: (body: EventUpsertRequest) => createEvent(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-events'] });
+      onClose();
+    },
+    onError: (err: any) => setError(err?.message ?? 'Kunne ikke opprette event'),
+  });
 
-  function onChange<K extends keyof FormValues>(key: K, value: FormValues[K]) {
-    setForm((f) => ({ ...f, [key]: value }));
-  }
+  const updateM = useMutation({
+    mutationFn: (vars: { id: number; body: EventUpsertRequest }) =>
+      updateEvent(vars.id, vars.body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-events'] });
+      onClose();
+    },
+    onError: (err: any) => setError(err?.message ?? 'Kunne ikke oppdatere event'),
+  });
 
-  const submitDisabled = useMemo(() => {
-    return (editing ? mUpdate.isPending : mCreate.isPending) || !form.slug || !form.title;
-  }, [editing, mUpdate.isPending, mCreate.isPending, form.slug, form.title]);
+  const deleteM = useMutation({
+    mutationFn: (id: number) => deleteEvent(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-events'] }),
+    onError: (err: any) => alert(err?.message ?? 'Kunne ikke slette'),
+  });
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const payload: EventUpsert = {
-      slug: form.slug.trim(),
-      title: form.title.trim(),
-      summary: form.summary.trim() || null,
-      description: form.description.trim() || null,
-      location: form.location.trim() || null,
-      coverImageUrl: form.coverImageUrl.trim() || null,
-      rsvpUrl: form.rsvpUrl.trim() || null,
-      startAt: localInputToIso(form.startAt),
-      endAt: localInputToIso(form.endAt),
-      galleryAlbumId: form.galleryAlbumId.trim()
-        ? Number(form.galleryAlbumId.trim())
-        : null,
+  const publishM = useMutation({
+    mutationFn: (vars: { id: number; value: boolean }) =>
+      setEventPublished(vars.id, vars.value),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-events'] }),
+    onError: (err: any) => alert(err?.message ?? 'Kunne ikke endre publiseringsstatus'),
+  });
+
+  const submit = () => {
+    setError(null);
+
+    if (!editing.slug.trim()) return setError('Slug er påkrevd');
+    if (!editing.title.trim()) return setError('Tittel er påkrevd');
+
+    const body: EventUpsertRequest = {
+      slug: editing.slug.trim(),
+      title: editing.title.trim(),
+      summary: editing.summary || null,
+      description: editing.description || null,
+      location: editing.location || null,
+      coverImageUrl: editing.coverImageUrl || null,
+      rsvpUrl: editing.rsvpUrl || null,
+      startAt: editing.startAt || null,
+      endAt: editing.endAt || null,
+      galleryAlbumId: editing.galleryAlbumId ? Number(editing.galleryAlbumId) : null,
+      isPublished: editing.isPublished,
     };
-    if (editing) {
-      mUpdate.mutate({ id: editing.id, payload });
-    } else {
-      mCreate.mutate(payload);
-    }
-  }
 
-  function handleDelete(ev: EventDTO) {
-    if (!confirm(`Slett event "${ev.title}"?`)) return;
-    mDelete.mutate(ev.id);
-  }
-
-  function autoSlug() {
-    if (!form.title) return;
-    const s = form.title
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    onChange("slug", s);
-  }
-
-  if (q.isLoading) return <div>Laster…</div>;
-  if (q.isError) return <div className="text-red-500">Feil: {(q.error as Error).message}</div>;
-
-  const items = q.data?.content ?? [];
+    if (!editing.id) createM.mutate(body);
+    else updateM.mutate({ id: editing.id, body });
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-3xl md:text-4xl font-bold">Events (Admin)</h1>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Events (Admin)</h1>
         <button
-          onClick={openCreate}
-          className="rounded-lg px-4 py-2 border border-white/15 hover:bg-white/5"
+          className="rounded-lg px-4 py-2 border hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700"
+          onClick={() => {
+            setEditing(emptyForm());
+            setOpen(true);
+          }}
         >
           + Ny event
         </button>
       </div>
 
-      {/* List */}
-      <ul className="space-y-3">
-        {items.map((ev) => (
-          <li
-            key={ev.id}
-            className="rounded-xl border border-white/10 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
-          >
-            <div className="space-y-1">
-              <div className="font-semibold text-lg">{ev.title}</div>
-              <div className="text-sm opacity-70">{ev.slug}</div>
-              <div className="text-xs opacity-70">
-                {ev.startAt
-                  ? `Starter: ${new Date(ev.startAt).toLocaleString()}`
-                  : "Start: —"}
-                {ev.endAt ? `  ·  Slutt: ${new Date(ev.endAt).toLocaleString()}` : ""}
-              </div>
-            </div>
+      {q.isLoading ? (
+        <div>Laster…</div>
+      ) : q.isError ? (
+        <div className="text-red-500">Feil: {(q.error as any)?.message}</div>
+      ) : (
+        <div className="overflow-x-auto border rounded-xl border-gray-200 dark:border-gray-800">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-900/40">
+              <tr className="[&>th]:px-3 [&>th]:py-2 text-left">
+                <th>ID</th>
+                <th>Slug</th>
+                <th>Tittel</th>
+                <th>Start</th>
+                <th>Publisert</th>
+                <th className="text-right pr-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((e) => (
+                <tr key={e.id} className="border-t border-gray-200 dark:border-gray-800 [&>td]:px-3 [&>td]:py-2">
+                  <td>{e.id}</td>
+                  <td className="font-mono">{e.slug}</td>
+                  <td>{e.title}</td>
+                  <td>{e.startAt ? new Date(e.startAt).toLocaleString() : '—'}</td>
+                  <td>
+                    {e.isPublished ? (
+                      <span className="rounded bg-green-100 text-green-800 px-2 py-0.5 dark:bg-green-900/30 dark:text-green-300">
+                        Ja
+                      </span>
+                    ) : (
+                      <span className="rounded bg-yellow-100 text-yellow-800 px-2 py-0.5 dark:bg-yellow-900/30 dark:text-yellow-300">
+                        Nei
+                      </span>
+                    )}
+                  </td>
+                  <td className="text-right space-x-2">
+                    {e.isPublished ? (
+                      <button
+                        className={btnBase}
+                        disabled={publishM.isPending}
+                        onClick={() => publishM.mutate({ id: e.id, value: false })}
+                      >
+                        Unpublish
+                      </button>
+                    ) : (
+                      <button
+                        className={btnBase}
+                        disabled={publishM.isPending}
+                        onClick={() => publishM.mutate({ id: e.id, value: true })}
+                      >
+                        Publish
+                      </button>
+                    )}
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => togglePublished(ev)}
-                className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
-                disabled={mPublish.isPending}
-                title={ev.published ? "Avpubliser" : "Publiser"}
-              >
-                {ev.published ? "Publisert" : "Upublisert"}
-              </button>
+                    <button className={btnBase} onClick={() => onEdit(e)}>
+                      Edit
+                    </button>
+                    <button
+                      className="px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
+                      disabled={deleteM.isPending}
+                      onClick={() => {
+                        if (confirm('Slette event?')) deleteM.mutate(e.id);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
 
-              <button
-                onClick={() => openEdit(ev)}
-                className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
-              >
-                Rediger
-              </button>
+              {rows.length === 0 && (
+                <tr>
+                  <td className="px-3 py-6 text-center text-gray-500" colSpan={6}>
+                    Ingen events enda.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-              <button
-                onClick={() => handleDelete(ev)}
-                className="rounded-lg px-3 py-1 border border-red-400/50 text-red-300 hover:bg-red-500/10"
-                disabled={mDelete.isPending}
-              >
-                Slett
-              </button>
-            </div>
-          </li>
-        ))}
-        {items.length === 0 && (
-          <li className="opacity-60">Ingen events enda. Klikk “Ny event”.</li>
-        )}
-      </ul>
-
-      {/* Drawer / Form */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl rounded-2xl border border-white/10 bg-neutral-900 p-5 md:p-6 space-y-4">
+      {/* Upsert dialog */}
+      {open && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-950 rounded-2xl shadow-xl w-full max-w-3xl p-6 space-y-4 border border-gray-200 dark:border-gray-800">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">
-                {editing ? "Rediger event" : "Ny event"}
+              <h2 className="text-xl font-semibold">
+                {editing.id ? 'Rediger event' : 'Ny event'}
               </h2>
               <button
-                onClick={closeForm}
-                className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
+                className="text-gray-500 hover:text-black dark:hover:text-white"
+                onClick={onClose}
+                aria-label="Lukk"
+                title="Lukk"
               >
-                Lukk
+                ✕
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <LabeledInput
-                  label="Tittel *"
-                  value={form.title}
-                  onChange={(v) => onChange("title", v)}
-                  onBlur={autoSlug}
-                />
-                <LabeledInput
-                  label="Slug *"
-                  value={form.slug}
-                  onChange={(v) => onChange("slug", v)}
-                  hint="automatisk fra tittel – kan justeres"
-                />
-              </div>
+            {error && <div className="text-red-600">{error}</div>}
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <LabeledInput
-                  label="Sted"
-                  value={form.location}
-                  onChange={(v) => onChange("location", v)}
+            <div className="grid grid-cols-2 gap-4">
+              <label className="space-y-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Slug *</span>
+                <input
+                  className={inputCls}
+                  value={editing.slug}
+                  onChange={(e) => setEditing((s) => ({ ...s, slug: e.target.value }))}
                 />
-                <LabeledInput
-                  label="RSVP URL"
-                  value={form.rsvpUrl}
-                  onChange={(v) => onChange("rsvpUrl", v)}
-                />
-              </div>
+              </label>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <LabeledInput
-                  label="Cover-bilde URL"
-                  value={form.coverImageUrl}
-                  onChange={(v) => onChange("coverImageUrl", v)}
+              <label className="space-y-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Tittel *</span>
+                <input
+                  className={inputCls}
+                  value={editing.title}
+                  onChange={(e) => setEditing((s) => ({ ...s, title: e.target.value }))}
                 />
-                <LabeledInput
-                  label="Galleri Album ID"
+              </label>
+
+              <label className="space-y-1 col-span-2">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Sammendrag</span>
+                <input
+                  className={inputCls}
+                  value={editing.summary}
+                  onChange={(e) => setEditing((s) => ({ ...s, summary: e.target.value }))}
+                />
+              </label>
+
+              <label className="space-y-1 col-span-2">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Beskrivelse (markdown/HTML)</span>
+                <textarea
+                  className={inputCls}
+                  rows={4}
+                  value={editing.description}
+                  onChange={(e) => setEditing((s) => ({ ...s, description: e.target.value }))}
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Sted</span>
+                <input
+                  className={inputCls}
+                  value={editing.location}
+                  onChange={(e) => setEditing((s) => ({ ...s, location: e.target.value }))}
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Cover image URL</span>
+                <input
+                  className={inputCls}
+                  value={editing.coverImageUrl}
+                  onChange={(e) => setEditing((s) => ({ ...s, coverImageUrl: e.target.value }))}
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">RSVP URL</span>
+                <input
+                  className={inputCls}
+                  value={editing.rsvpUrl}
+                  onChange={(e) => setEditing((s) => ({ ...s, rsvpUrl: e.target.value }))}
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Start (ISO, f.eks. 2025-09-01T18:00:00Z)
+                </span>
+                <input
+                  className={`${inputCls} font-mono`}
+                  placeholder="2025-09-01T18:00:00Z"
+                  value={editing.startAt}
+                  onChange={(e) => setEditing((s) => ({ ...s, startAt: e.target.value }))}
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Slutt (ISO)</span>
+                <input
+                  className={`${inputCls} font-mono`}
+                  placeholder="2025-09-01T20:00:00Z"
+                  value={editing.endAt}
+                  onChange={(e) => setEditing((s) => ({ ...s, endAt: e.target.value }))}
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Album-ID (valgfritt)</span>
+                <input
+                  className={inputCls}
                   type="number"
-                  value={form.galleryAlbumId}
-                  onChange={(v) => onChange("galleryAlbumId", v)}
+                  value={editing.galleryAlbumId}
+                  onChange={(e) => setEditing((s) => ({ ...s, galleryAlbumId: e.target.value }))}
                 />
-              </div>
+              </label>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <LabeledInput
-                  label="Start"
-                  type="datetime-local"
-                  value={form.startAt}
-                  onChange={(v) => onChange("startAt", v)}
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-indigo-600"
+                  checked={editing.isPublished}
+                  onChange={(e) => setEditing((s) => ({ ...s, isPublished: e.target.checked }))}
                 />
-                <LabeledInput
-                  label="Slutt"
-                  type="datetime-local"
-                  value={form.endAt}
-                  onChange={(v) => onChange("endAt", v)}
-                />
-              </div>
+                <span className="text-sm text-gray-700 dark:text-gray-300">Publisert</span>
+              </label>
+            </div>
 
-              <LabeledTextarea
-                label="Sammendrag"
-                value={form.summary}
-                onChange={(v) => onChange("summary", v)}
-              />
-
-              <LabeledTextarea
-                label="Beskrivelse"
-                value={form.description}
-                onChange={(v) => onChange("description", v)}
-                rows={8}
-              />
-
-              {(mCreate.isError || mUpdate.isError) && (
-                <div className="text-red-400 text-sm">
-                  {(mCreate.error as Error)?.message ||
-                    (mUpdate.error as Error)?.message}
-                </div>
-              )}
-
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="submit"
-                  className="rounded-lg px-4 py-2 border border-white/15 hover:bg-white/5 disabled:opacity-60"
-                  disabled={submitDisabled}
-                >
-                  {editing
-                    ? mUpdate.isPending
-                      ? "Lagrer…"
-                      : "Lagre endringer"
-                    : mCreate.isPending
-                    ? "Oppretter…"
-                    : "Opprett"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeForm}
-                  className="rounded-lg px-4 py-2 border border-white/10 hover:bg-white/5"
-                >
-                  Avbryt
-                </button>
-              </div>
-            </form>
+            <div className="flex items-center justify-end gap-2">
+              <button className={btnBase} onClick={onClose}>
+                Avbryt
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg bg-black text-white dark:bg-indigo-600"
+                onClick={submit}
+                disabled={createM.isPending || updateM.isPending}
+              >
+                {editing.id ? 'Lagre' : 'Opprett'}
+              </button>
+            </div>
           </div>
         </div>
       )}
     </div>
-  );
-}
-
-/* ----------------------------- UI subcomponents ----------------------------- */
-function LabeledInput(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  hint?: string;
-  onBlur?: () => void;
-}) {
-  const { label, value, onChange, type = "text", hint, onBlur } = props;
-  return (
-    <label className="block">
-      <div className="mb-1 text-sm opacity-80">{label}</div>
-      <input
-        type={type}
-        value={value}
-        onBlur={onBlur}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg bg-white text-slate-900 placeholder-slate-400 px-3 py-2 outline-none ring-0 border border-black/10"
-        placeholder=""
-      />
-      {hint && <div className="mt-1 text-xs opacity-60">{hint}</div>}
-    </label>
-  );
-}
-
-function LabeledTextarea(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  rows?: number;
-}) {
-  const { label, value, onChange, rows = 4 } = props;
-  return (
-    <label className="block">
-      <div className="mb-1 text-sm opacity-80">{label}</div>
-      <textarea
-        rows={rows}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg bg-white text-slate-900 placeholder-slate-400 px-3 py-2 outline-none ring-0 border border-black/10"
-      />
-    </label>
   );
 }
