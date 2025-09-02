@@ -1,3 +1,4 @@
+// admin-web/src/main.tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
@@ -7,6 +8,7 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 import App from "./App";
 import Login from "./pages/Login";
 import AdminEvents from "./pages/events/AdminEvents";
+import AdminAlbums from "./pages/albums/AdminAlbums";
 import "./index.css";
 
 const qc = new QueryClient();
@@ -15,13 +17,14 @@ const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   {
     path: "/",
-    element: <ProtectedRoute />,   // <-- no BrowserRouter here
+    element: <ProtectedRoute />,
     children: [
       {
-        element: <App />,          // shell layout (nav/sidebar/etc.)
+        element: <App />,
         children: [
-          { index: true, element: <AdminEvents /> },
+          { index: true, element: <div>Admin</div> },
           { path: "events", element: <AdminEvents /> },
+          { path: "albums", element: <AdminAlbums /> },
         ],
       },
     ],

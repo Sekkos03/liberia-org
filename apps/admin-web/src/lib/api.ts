@@ -1,84 +1,138 @@
-// Central API helper + types
+// admin-web/src/lib/api.ts
+import axios from "axios";
 
-// public-web/src/lib/api.ts
-export const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+/* ------------------------------- HTTP client ------------------------------- */
+const API_BASE =
+  (import.meta.env.VITE_API_BASE as string) ?? "http://localhost:8080";
 
-async function handle<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${res.statusText} ${txt}`);
+function getToken(): string | null {
+  // Try a few common keys to be safe
+  return (
+    localStorage.getItem("auth_token") ||
+    localStorage.getItem("token") ||
+    localStorage.getItem("jwt") ||
+    null
+  );
+}
+
+export const http = axios.create({
+  baseURL: API_BASE,
+  timeout: 15000,
+});
+
+// Attach Authorization header if we have a token
+http.interceptors.request.use((cfg) => {
+  const t = getToken();
+  if (t) {
+    cfg.headers = cfg.headers ?? {};
+    // Ensure single "Bearer " prefix (avoid double)
+    const value = t.startsWith("Bearer ") ? t : `Bearer ${t}`;
+    cfg.headers["Authorization"] = value;
   }
-  return res.json() as Promise<T>;
-}
+  return cfg;
+});
 
-export function apiGet<T>(path: string): Promise<T> {
-  return fetch(`${API_BASE}${path}`, {
-    // 👇 public site should not send cookies/auth by default
-    credentials: "omit",
-    headers: { Accept: "application/json" },
-  }).then(handle<T>);
-}
+// If backend says 401, nuke token and send user to login
+http.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    if (err?.response?.status === 401) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("token");
+      localStorage.removeItem("jwt");
+      // Redirect only if we’re not already on login
+      if (!location.pathname.includes("/login")) {
+        location.assign("/login");
+      }
+    }
+    return Promise.reject(err);
+  }
+);
 
+/* ---------------------------------- Types --------------------------------- */
+export type Page<T> = {
+  content: T[];
+  number: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
 
-export type EventDto = {
+export type EventDTO = {
   id: number;
   slug: string;
   title: string;
-  summary?: string | null;
-  description?: string | null;
-  location?: string | null;
-  coverImageUrl?: string | null;
-  rsvpUrl?: string | null;
-  startAt?: string | null; // ISO OffsetDateTime
-  endAt?: string | null;   // ISO OffsetDateTime
-  isPublished?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  summary: string | null;
+  description: string | null;
+  location: string | null;
+  coverImageUrl: string | null;
+  rsvpUrl: string | null;
+  startAt: string | null; // ISO string from backend (OffsetDateTime)
+  endAt: string | null;   // ISO string
+  galleryAlbumId: number | null;
+  published: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
-function authHeader() {
-  const token = localStorage.getItem("jwt");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+export type EventUpsert = {
+  slug: string;
+  title: string;
+  summary: string | null;
+  description: string | null;
+  location: string | null;
+  coverImageUrl: string | null;
+  rsvpUrl: string | null;
+  startAt: string | null; // send ISO (we convert from datetime-local in UI)
+  endAt: string | null;
+  galleryAlbumId: number | null;
+};
 
-export async function apiFetch<T = unknown>(
-  path: string,
-  init: RequestInit = {}
-): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    credentials: "omit",
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...authHeader(),
-      ...(init.headers || {}),
-    },
+
+
+/* ------------------------------- Auth (login) ------------------------------ */
+export async function login(username: string, password: string): Promise<void> {
+  const res = await http.post<{ token: string }>("/api/auth/login", {
+    username,
+    password,
   });
-
-  // 204 No Content
-  if (res.status === 204) {
-    // @ts-expect-error allow void
-    return null;
-  }
-
-  const contentType = res.headers.get("content-type") || "";
-  const isJson = contentType.includes("application/json");
-
-  const body = isJson ? await res.json() : await res.text();
-
-  if (!res.ok) {
-    const message =
-      (isJson && (body?.detail || body?.message)) ||
-      `${res.status} ${res.statusText}`;
-    throw new Error(message);
-  }
-
-  return body as T;
+  const tok = res.data.token;
+  // Store as "auth_token" (our preferred key)
+  localStorage.setItem("auth_token", tok.startsWith("Bearer ") ? tok.slice(7) : tok);
 }
 
-// Specific helpers
-export const AdminApi = {
-  listEvents: () => apiFetch<EventDto[] | { items?: EventDto[]; content?: EventDto[] }>("/api/admin/events"),
-};
+/* --------------------------- Admin Events (CRUD) --------------------------- */
+export async function listAdminEvents(
+  page = 0,
+  size = 20
+): Promise<Page<EventDTO>> {
+  const res = await http.get<Page<EventDTO>>("/api/admin/events", {
+    params: { page, size },
+  });
+  return res.data;
+}
+
+export async function createEvent(payload: EventUpsert): Promise<EventDTO> {
+  const res = await http.post<EventDTO>("/api/admin/events", payload);
+  return res.data;
+}
+
+export async function updateEvent(
+  id: number,
+  payload: EventUpsert
+): Promise<EventDTO> {
+  const res = await http.put<EventDTO>(`/api/admin/events/${id}`, payload);
+  return res.data;
+}
+
+export async function deleteEvent(id: number): Promise<void> {
+  await http.delete(`/api/admin/events/${id}`);
+}
+
+export async function setEventPublished(
+  id: number,
+  value: boolean
+): Promise<void> {
+  // Option B: PATCH full method with JSON body
+  await http.patch(`/api/admin/events/${id}/publish`, { published: value });
+}

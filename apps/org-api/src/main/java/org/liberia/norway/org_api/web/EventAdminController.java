@@ -2,92 +2,97 @@ package org.liberia.norway.org_api.web;
 
 import org.liberia.norway.org_api.model.Event;
 import org.liberia.norway.org_api.repository.EventRepository;
-import org.liberia.norway.org_api.util.SlugUtil;
 import org.liberia.norway.org_api.web.dto.EventResponse;
 import org.liberia.norway.org_api.web.dto.EventUpsertRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-import jakarta.validation.Valid;
+import java.time.OffsetDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/events")
-@CrossOrigin(origins = {"http://localhost:5173"})
 public class EventAdminController {
-  private final EventRepository repo;
-  public EventAdminController(EventRepository repo) { this.repo = repo; }
 
-  @GetMapping
-  public Page<Object> list(@RequestParam(defaultValue = "0") int page,
-                                  @RequestParam(defaultValue = "20") int size) {
-    return repo.findAll(PageRequest.of(page, size)).map(EventResponse::from);
-  }
+    private final EventRepository eventRepo;
 
-  @PostMapping
-  public ResponseEntity<Object> create(@Valid @RequestBody EventUpsertRequest body) {
-    var slug = SlugUtil.slugify(body.title());
-    if (slug == null) return ResponseEntity.badRequest().build();
-    if (repo.existsBySlug(slug)) return ResponseEntity.status(409).build();
+    public EventAdminController(EventRepository eventRepo) {
+        this.eventRepo = eventRepo;
+    }
 
-    var e = new Event();
-    e.setSlug(slug);
-    e.setTitle(body.title());
-    e.setSummary(body.summary());
-    e.setDescription(body.description());
-    e.setLocation(body.location());
-    e.setCoverImageUrl(body.coverImageUrl());
-    e.setRsvpUrl(body.rsvpUrl());
-    e.setStartAt(body.startAt());
-    e.setEndAt(body.endAt());
-    e.setGalleryAlbumId(body.galleryAlbumId());
-    e.setPublished(body.isPublished());
+    @GetMapping
+    public Page<EventResponse> list(@RequestParam(defaultValue = "0") int page,
+                                    @RequestParam(defaultValue = "20") int size) {
+        return eventRepo.findAll(PageRequest.of(page, size)).map(EventResponse::from);
+    }
 
-    var saved = repo.save(e);
-    return ResponseEntity.ok(EventResponse.from(saved));
-  }
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public EventResponse create(@RequestBody EventUpsertRequest req) {
+        var e = new Event();
+        apply(e, req);
+        e.setCreatedAt(OffsetDateTime.now());
+        e.setUpdatedAt(OffsetDateTime.now());
+        e = eventRepo.save(e);
+        return EventResponse.from(e);
+    }
 
-  @PutMapping("/{id}")
-  @Transactional
-  public ResponseEntity<Object> update(@PathVariable Long id,
-                                              @Valid @RequestBody EventUpsertRequest body) {
-    return (ResponseEntity<Object>) repo.findById(id).map(e -> {
-      var newSlug = SlugUtil.slugify(body.title());
-      if (newSlug == null) return ResponseEntity.badRequest().build();
-      if (!newSlug.equals(e.getSlug()) && repo.existsBySlug(newSlug)) {
-        return ResponseEntity.status(409).build();
-      }
-      e.setSlug(newSlug);
-      e.setTitle(body.title());
-      e.setSummary(body.summary());
-      e.setDescription(body.description());
-      e.setLocation(body.location());
-      e.setCoverImageUrl(body.coverImageUrl());
-      e.setRsvpUrl(body.rsvpUrl());
-      e.setStartAt(body.startAt());
-      e.setEndAt(body.endAt());
-      e.setGalleryAlbumId(body.galleryAlbumId());
-      e.setPublished(body.isPublished());
-      return ResponseEntity.ok(EventResponse.from(e));
-    }).orElseGet(() -> ResponseEntity.notFound().build());
-  }
+    @PutMapping("/{id}")
+    public EventResponse update(@PathVariable long id, @RequestBody EventUpsertRequest req) {
+        var e = eventRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        apply(e, req);
+        e.setUpdatedAt(OffsetDateTime.now());
+        e = eventRepo.save(e);
+        return EventResponse.from(e);
+    }
 
-  @PutMapping("/{id}/publish")
-  @Transactional
-  public ResponseEntity<Object> publish(@PathVariable Long id,
-                                      @RequestParam boolean value) {
-    return repo.findById(id).map(e -> {
-      e.setPublished(value);
-      return ResponseEntity.noContent().build();
-    }).orElseGet(() -> ResponseEntity.notFound().build());
-  }
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable long id) {
+        if (!eventRepo.existsById(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        eventRepo.deleteById(id);
+    }
 
-  @DeleteMapping("/{id}")
-  public ResponseEntity<Object> delete(@PathVariable Long id) {
-    if (!repo.existsById(id)) return ResponseEntity.notFound().build();
-    repo.deleteById(id);
-    return ResponseEntity.noContent().build();
-  }
+    // ✅ NEW/PATCH publish toggle
+    @PatchMapping("/{id}/publish")
+    public EventResponse setPublished(@PathVariable long id,
+                                      @RequestParam(value = "value", required = false) Boolean value,
+                                      @RequestBody(required = false) Map<String, Object> body) {
+        if (value == null && body != null) {
+            if (body.containsKey("value")) {
+                value = Boolean.valueOf(String.valueOf(body.get("value")));
+            } else if (body.containsKey("published")) {
+                value = Boolean.valueOf(String.valueOf(body.get("published")));
+            }
+        }
+        if (value == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Provide 'value' query param or JSON body { value: boolean }");
+        }
+
+        var e = eventRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        e.setPublished(value);
+        e.setUpdatedAt(OffsetDateTime.now());
+        e = eventRepo.save(e);
+        return EventResponse.from(e);
+    }
+
+    private static void apply(Event e, EventUpsertRequest req) {
+        e.setSlug(req.slug());
+        e.setTitle(req.title());
+        e.setSummary(emptyToNull(req.summary()));
+        e.setDescription(emptyToNull(req.description()));
+        e.setLocation(emptyToNull(req.location()));
+        e.setCoverImageUrl(emptyToNull(req.coverImageUrl()));
+        e.setRsvpUrl(emptyToNull(req.rsvpUrl()));
+        e.setStartAt(req.startAt());
+        e.setEndAt(req.endAt());
+        e.setGalleryAlbumId(req.galleryAlbumId());
+        // published is not set here; controlled via PATCH
+    }
+
+    private static String emptyToNull(String v) { return (v == null || v.isBlank()) ? null : v; }
 }
