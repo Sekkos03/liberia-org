@@ -26,3 +26,11 @@ VALUES
 INSERT INTO suggestions (name, email, message) VALUES
   ('Sekou', 'sekou@example.com', 'Loving the site!'),
   ('Awa',   'awa@example.com',   'Please add a contact form.');
+
+-- album fake data
+INSERT INTO albums (slug, title, description, cover_photo_id, is_published, created_at, updated_at) VALUES
+('album-1', 'Album #1', 'This is a fake album number 1.', NULL, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('album-2', 'Album #2', 'This is a fake album number 2.', NULL, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('album-3', 'Album #3', 'This is a fake album number 3.', NULL, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('album-4', 'Album #4', 'This is a fake album number 4.', NULL, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('album-5', 'Album #5', 'This is a fake album number 5.', NULL, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

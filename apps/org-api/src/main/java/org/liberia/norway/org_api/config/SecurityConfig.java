@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
   private final JwtAuthFilter jwt;
+
 
 @Bean
 PasswordEncoder passwordEncoder() {
@@ -80,7 +82,8 @@ CorsConfigurationSource corsConfigurationSource() {
   c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174"));
   c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
   c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
-  c.setExposedHeaders(List.of("Location"));
+  c.setExposedHeaders(List.of("Location", "Content-Disposition"));
+  c.setAllowCredentials(false); // vi bruker Bearer-token, ikke cookies
   var s = new UrlBasedCorsConfigurationSource();
   s.registerCorsConfiguration("/**", c);
   return s;
@@ -91,4 +94,13 @@ CorsConfigurationSource corsConfigurationSource() {
 
 
 }
+
+@Bean
+    DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
+                                                     PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider p = new DaoAuthenticationProvider();
+        p.setUserDetailsService(userDetailsService);
+        p.setPasswordEncoder(passwordEncoder);
+        return p;
+    }
 }

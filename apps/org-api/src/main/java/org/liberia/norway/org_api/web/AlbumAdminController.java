@@ -8,6 +8,7 @@ import org.liberia.norway.org_api.repository.PhotoRepository;
 import org.liberia.norway.org_api.service.FileStorageService;
 import org.springframework.data.domain.*;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.stream.IntStream;
 
 @RestController
 @RequestMapping("/api/admin/albums")
@@ -72,15 +72,26 @@ public class AlbumAdminController {
         return res;
     }
 
-    @PostMapping("/{id}/publish")
-    @Transactional
-    public AlbumResponse setPublished(@PathVariable Long id, @RequestParam boolean value) {
-        var album = albumRepo.findById(id).orElseThrow();
-        album.setPublished(value);
+    @PatchMapping("/{id}/publish")
+    public ResponseEntity<Void> setPublished(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> body
+    ) {
+        if (body == null || !body.containsKey("published")) {
+            return ResponseEntity.badRequest().build();
+        }
+        boolean published = Boolean.TRUE.equals(body.get("published"));
+
+        Album album = albumRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Album not found: " + id));
+
+        album.setPublished(published);
         album.setUpdatedAt(OffsetDateTime.now());
-        long count = photoRepo.countByAlbum_Id(album.getId());
-        return mapAlbum(album, count);
+
+        albumRepo.save(album);
+        return ResponseEntity.noContent().build();
     }
+
 
     @PutMapping("/{id}/cover/{photoId}")
     @Transactional
