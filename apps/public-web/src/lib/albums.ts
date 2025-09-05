@@ -1,5 +1,6 @@
-// public-web/src/lib/api.ts
-export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+// public-web/src/lib/albums.ts
+export const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -11,13 +12,22 @@ async function handle<T>(res: Response): Promise<T> {
 }
 
 export function apiGet<T>(path: string): Promise<T> {
-  return fetch(`${API_BASE}${path}`, { 
-    credentials: "omit", 
-    headers: { Accept: "application/json" }, 
-}).then(handle<T>);
+  return fetch(`${API_BASE}${path}`, {
+    credentials: "omit",
+    headers: { Accept: "application/json" },
+  }).then(handle<T>);
 }
 
-// ---- Events (public) --------------------------------------------------------
+/** Minimal Page-type når backend returnerer Spring Page */
+export type Page<T> = {
+  content: T[];
+  totalElements?: number;
+  totalPages?: number;
+  size?: number;
+  number?: number;
+};
+
+/** Events (public) */
 export type PublicEvent = {
   slug: string;
   title: string;
@@ -29,7 +39,7 @@ export function listPublicEvents(): Promise<PublicEvent[]> {
   return apiGet(`/api/events`);
 }
 
-// ---- Albums (public) --------------------------------------------------------
+/** Albums (public) */
 export type PublicAlbum = {
   id: number;
   slug: string;
@@ -37,13 +47,18 @@ export type PublicAlbum = {
   coverUrl?: string | null;
   photoCount: number;
 };
-
 export type PublicPhoto = { id: number; url: string; caption?: string | null };
 
-export function listPublicAlbums(): Promise<PublicAlbum[]> {
+/**
+ * Kan være enten en plain liste (PublicAlbum[]) ELLER en Page<PublicAlbum>
+ * avhengig av backend-endepunktet.
+ */
+export function listPublicAlbums(): Promise<PublicAlbum[] | Page<PublicAlbum>> {
   return apiGet(`/api/albums`);
 }
 
-export function getPublicAlbum(slug: string): Promise<{ album: PublicAlbum; photos: PublicPhoto[] }> {
+export function getPublicAlbum(
+  slug: string
+): Promise<{ album: PublicAlbum; photos: PublicPhoto[] }> {
   return apiGet(`/api/albums/${slug}`);
 }

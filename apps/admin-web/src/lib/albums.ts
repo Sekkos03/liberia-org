@@ -70,7 +70,8 @@ export async function setAlbumPublished(
   id: number,
   value: boolean
 ): Promise<void> {
-  // Viktig: /published (ikke /publish) og JSON-body
+  // PATCH-endepunktet i backend: /api/admin/albums/{id}/publish
+  // Body må være { published: boolean }
   await http.patch(`/api/admin/albums/${id}/publish`, { published: value });
 }
 

@@ -1,15 +1,22 @@
-// admin-web/src/main.tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { AuthProvider } from "./auth/AuthProvider";
 import ProtectedRoute from "./auth/ProtectedRoute";
+
 import App from "./App";
 import Login from "./pages/Login";
+
+// Admin-sider
 import AdminEvents from "./pages/events/AdminEvents";
-import AdminAlbums from "./pages/albums/AdminAlbums";
+import AdminAlbums from "./pages/albums/AdminAlbums";   // justér sti hvis filen ligger et annet sted
+import AdminAdverts from "./pages/adverts/AdminAdverts"; // justér sti hvis filen ligger et annet sted
+
 import "./index.css";
+import AdminMembership from "./pages/membership/AdminMembership";
+import AdminSuggestions from "./pages/suggestions/AdminSuggestions";
 
 const qc = new QueryClient();
 
@@ -22,9 +29,12 @@ const router = createBrowserRouter([
       {
         element: <App />,
         children: [
-          { index: true, element: <div>Admin</div> },
+          { index: true, element: <Navigate to="/events" replace /> },
           { path: "events", element: <AdminEvents /> },
           { path: "albums", element: <AdminAlbums /> },
+          { path: "adverts", element: <AdminAdverts /> },
+          {path: "/membership", element: <AdminMembership />},
+          {path: "/suggestions", element: <AdminSuggestions />}
         ],
       },
     ],

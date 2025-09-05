@@ -8,6 +8,9 @@ export default function App() {
         <Link to="/">Admin</Link>
         <Link to="/events">Events</Link>
         <Link to="/albums">Albums</Link>
+        <Link to="/adverts">Adverts</Link>
+        <Link to="/membership">Membership</Link>
+        <Link to="/suggestions">Postbox</Link>
       </nav>
       <hr className="border-white/10 mb-6" />
       <Outlet />
