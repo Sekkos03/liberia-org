@@ -33,8 +33,8 @@ const router = createBrowserRouter([
           { path: "events", element: <AdminEvents /> },
           { path: "albums", element: <AdminAlbums /> },
           { path: "adverts", element: <AdminAdverts /> },
-          {path: "/membership", element: <AdminMembership />},
-          {path: "/suggestions", element: <AdminSuggestions />}
+          {path: "membership", element: <AdminMembership />},
+          {path: "suggestions", element: <AdminSuggestions />}
         ],
       },
     ],

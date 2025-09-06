@@ -1,19 +1,20 @@
-// admin-web/src/lib/advert.ts
-// Bruker samme http/auth-mekanisme som albums.ts
 import { http, type Page } from "./api";
 
 /* ---------------------------------- Types --------------------------------- */
 
 export type AdvertDTO = {
   id: number;
+  slug: string;
   title: string;
-  imageUrl: string | null;
+  description?: string | null;
   targetUrl?: string | null;
+  placement?: "SIDEBAR" | "HEADER" | string;
+  imageUrl?: string | null;
   startAt?: string | null; // ISO
   endAt?: string | null;   // ISO
-  published: boolean;
-  createdAt?: string;      // ISO
-  updatedAt?: string;      // ISO
+  active: boolean;         // <— API-feltet heter active
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type AdvertUpsert = {
@@ -21,10 +22,7 @@ export type AdvertUpsert = {
   targetUrl?: string;
   startAt?: string;        // ISO
   endAt?: string;          // ISO
-  /** Valgfritt ved oppdatering: last opp ny fil */
-  imageFile?: File | null;
-  /** Alternativ til fil: pek direkte på ekstern URL */
-  imageUrl?: string;
+  imageFile?: File | null; // valgfrie nye filer ved opprett/oppdater
 };
 
 /* ------------------------------ Admin endpoints --------------------------- */
@@ -40,60 +38,58 @@ export async function listAdminAdverts(
 }
 
 export async function createAdvert(body: AdvertUpsert): Promise<AdvertDTO> {
-  const fd = new FormData();
-  fd.append("title", body.title);
-  if (body.targetUrl) fd.append("targetUrl", body.targetUrl);
-  if (body.startAt) fd.append("startAt", body.startAt);
-  if (body.endAt) fd.append("endAt", body.endAt);
-  if (body.imageFile) fd.append("image", body.imageFile);
-  if (body.imageUrl) fd.append("imageUrl", body.imageUrl);
+  // 1) Opprett med JSON
+  const createPayload = {
+    title: body.title,
+    targetUrl: body.targetUrl ?? null,
+    startAt: body.startAt ?? null,
+    endAt: body.endAt ?? null,
+  };
+  const created = (await http.post<AdvertDTO>("/api/admin/adverts", createPayload)).data;
 
-  const res = await http.post<AdvertDTO>("/api/admin/adverts", fd);
-  return res.data;
+  // 2) Last opp bilde (valgfritt) til eget endepunkt
+  if (body.imageFile) {
+    const fd = new FormData();
+    fd.append("file", body.imageFile);
+    return (await http.post<AdvertDTO>(`/api/admin/adverts/${created.id}/image`, fd)).data;
+  }
+  return created;
 }
 
 export async function updateAdvert(
   id: number,
   body: AdvertUpsert
 ): Promise<AdvertDTO> {
-  const fd = new FormData();
-  fd.append("title", body.title);
-  if (body.targetUrl) fd.append("targetUrl", body.targetUrl);
-  if (body.startAt) fd.append("startAt", body.startAt);
-  if (body.endAt) fd.append("endAt", body.endAt);
-  if (body.imageFile) fd.append("image", body.imageFile);
-  if (body.imageUrl) fd.append("imageUrl", body.imageUrl);
+  // 1) Oppdater metadata som JSON
+  const updatePayload = {
+    title: body.title,
+    targetUrl: body.targetUrl ?? null,
+    startAt: body.startAt ?? null,
+    endAt: body.endAt ?? null,
+  };
+  const updated = (await http.put<AdvertDTO>(`/api/admin/adverts/${id}`, updatePayload)).data;
 
-  const res = await http.put<AdvertDTO>(`/api/admin/adverts/${id}`, fd);
-  return res.data;
+  // 2) Nytt bilde? last opp separat
+  if (body.imageFile) {
+    const fd = new FormData();
+    fd.append("file", body.imageFile);
+    return (await http.post<AdvertDTO>(`/api/admin/adverts/${id}/image`, fd)).data;
+  }
+  return updated;
 }
 
 export async function deleteAdvert(id: number): Promise<void> {
   await http.delete(`/api/admin/adverts/${id}`);
 }
 
-/**
- * Toggle publish – speiler mønsteret brukt for albums/events.
- * Backend-endepunkt må være PATCH /api/admin/adverts/{id}/published
- * og akseptere { published: boolean } i body.
- */
-export async function setAdvertPublished(
-  id: number,
-  value: boolean
-): Promise<void> {
-  await http.patch(`/api/admin/adverts/${id}/publish`, {
-    published: value,
-  });
+// Toggle active (ikke /publish, og ikke JSON-body)
+export async function setAdvertPublished(id: number, value: boolean): Promise<void> {
+  await http.post(`/api/admin/adverts/${id}/active`, null, { params: { value } });
 }
 
 /* ------------------------------ Public endpoints -------------------------- */
 
-export async function listPublicAdverts(
-  page = 0,
-  size = 20
-): Promise<Page<AdvertDTO>> {
-  const res = await http.get<Page<AdvertDTO>>("/api/adverts", {
-    params: { page, size },
-  });
+export async function listPublicAdverts(page = 0, size = 20): Promise<Page<AdvertDTO>> {
+  const res = await http.get<Page<AdvertDTO>>("/api/adverts", { params: { page, size } });
   return res.data;
 }

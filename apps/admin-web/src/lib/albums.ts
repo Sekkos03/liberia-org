@@ -1,19 +1,7 @@
 // admin-web/src/lib/albums.ts
 import { http, type Page } from "./api";
 
-/* ---------------------------------- Types --------------------------------- */
-
-export type AlbumDTO = {
-  id: number;
-  slug: string;
-  title: string;
-  description?: string | null;
-  coverPhotoId?: number | null;
-  published: boolean;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
-};
-
+// Define AlbumUpsert type (adjust fields as needed)
 export type AlbumUpsert = {
   slug: string;
   title: string;
@@ -22,20 +10,30 @@ export type AlbumUpsert = {
   published?: boolean;
 };
 
-export type PhotoDTO = {
+export type AlbumDTO = {
   id: number;
-  albumId: number;
-  originalName: string;
-  fileName: string;
-  contentType?: string | null;
-  sizeBytes: number;
-  url: string;
-  caption?: string | null;
-  sortOrder: number;
-  published: boolean;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
+  slug: string;
+  title: string;
+  description?: string | null;
+  coverPhotoId?: number | null;
+  published: boolean;           // behold "published" i frontend
+  createdAt: string;
+  updatedAt: string;
 };
+
+// HJELPER: mappe både "published" og "isPublished" til "published"
+function normalizeAlbum(a: any): AlbumDTO {
+  return {
+    id: a.id,
+    slug: a.slug,
+    title: a.title,
+    description: a.description ?? null,
+    coverPhotoId: a.coverPhotoId ?? null,
+    published: (a.published ?? a.isPublished) ?? false,
+    createdAt: a.createdAt,
+    updatedAt: a.updatedAt,
+  };
+}
 
 /* ------------------------------ Admin endpoints --------------------------- */
 
@@ -43,66 +41,41 @@ export async function listAlbumsAdmin(
   page = 0,
   size = 20
 ): Promise<Page<AlbumDTO>> {
-  const res = await http.get<Page<AlbumDTO>>("/api/admin/albums", {
-    params: { page, size },
-  });
-  return res.data;
+  const res = await http.get<Page<any>>("/api/admin/albums", { params: { page, size } });
+  return { ...res.data, content: res.data.content.map(normalizeAlbum) };
 }
 
 export async function createAlbum(body: AlbumUpsert): Promise<AlbumDTO> {
-  const res = await http.post<AlbumDTO>("/api/admin/albums", body);
-  return res.data;
+  const res = await http.post<any>("/api/admin/albums", body);
+  return normalizeAlbum(res.data);
 }
 
 export async function updateAlbum(
   id: number,
   body: AlbumUpsert
 ): Promise<AlbumDTO> {
-  const res = await http.put<AlbumDTO>(`/api/admin/albums/${id}`, body);
-  return res.data;
+  // Backend forventer "isPublished" i PUT-body (ikke "published")
+  const apiBody: any = { ...body };
+  if (Object.prototype.hasOwnProperty.call(apiBody, "published")) {
+    apiBody.isPublished = apiBody.published;
+    delete apiBody.published;
+  }
+  const res = await http.put<any>(`/api/admin/albums/${id}`, apiBody);
+  return normalizeAlbum(res.data);
 }
 
 export async function deleteAlbum(id: number): Promise<void> {
   await http.delete(`/api/admin/albums/${id}`);
 }
 
-export async function setAlbumPublished(
-  id: number,
-  value: boolean
-): Promise<void> {
-  // PATCH-endepunktet i backend: /api/admin/albums/{id}/publish
-  // Body må være { published: boolean }
+export async function setAlbumPublished(id: number, value: boolean): Promise<void> {
+  // PATCH-endepunktet bruker "published" i body – behold som før
   await http.patch(`/api/admin/albums/${id}/publish`, { published: value });
-}
-
-export async function uploadPhotos(
-  albumId: number,
-  files: File[],
-  captions?: (string | null)[]
-): Promise<PhotoDTO[]> {
-  const fd = new FormData();
-  files.forEach((f) => fd.append("files", f));
-  if (captions?.length) captions.forEach((c) => fd.append("captions", c ?? ""));
-  const res = await http.post<PhotoDTO[]>(
-    `/api/admin/albums/${albumId}/photos`,
-    fd
-  );
-  return res.data;
 }
 
 /* ------------------------------ Public endpoints -------------------------- */
 
-export async function listPublicAlbums(
-  page = 0,
-  size = 20
-): Promise<Page<AlbumDTO>> {
-  const res = await http.get<Page<AlbumDTO>>("/api/albums", {
-    params: { page, size },
-  });
-  return res.data;
-}
-
-export async function listPublicPhotos(albumId: number): Promise<PhotoDTO[]> {
-  const res = await http.get<PhotoDTO[]>(`/api/albums/${albumId}/photos`);
-  return res.data;
+export async function listPublicAlbums(page = 0, size = 20): Promise<Page<AlbumDTO>> {
+  const res = await http.get<Page<any>>("/api/albums", { params: { page, size } });
+  return { ...res.data, content: res.data.content.map(normalizeAlbum) };
 }

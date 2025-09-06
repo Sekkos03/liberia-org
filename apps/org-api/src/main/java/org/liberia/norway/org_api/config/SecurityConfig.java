@@ -55,6 +55,7 @@ SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws 
         .requestMatchers(HttpMethod.POST, "/api/events").permitAll()
         .requestMatchers(HttpMethod.GET, "/api/suggestions/**").permitAll()
         .requestMatchers(HttpMethod.POST, "/api/suggestions").permitAll()
+        .requestMatchers(HttpMethod.POST, "/api/membership/**").permitAll()
         .requestMatchers(
           "/h2-console/**",
           "/actuator/**",
@@ -64,7 +65,7 @@ SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws 
           "/api/albums/**",
           "/api/pages/**",
           "/api/adverts/**",
-          "/api/membership").permitAll()
+          "/api/membership/**").permitAll()
         .requestMatchers("/api/admin/**").hasRole("ADMIN")
         .anyRequest().authenticated()
       );

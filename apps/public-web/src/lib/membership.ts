@@ -1,17 +1,29 @@
-// public-web/src/lib/membership.ts
-import { API_BASE } from "./api";
+// Offentlig API for innsendte medlemskapssøknader
+// Bruker samme API_BASE som resten av public-web
+export const API_BASE =
+  import.meta.env.VITE_API_BASE ?? "http://localhost:8080";
 
-export type MembershipFormSettings = { url: string; title?: string; description?: string };
+export type MembershipForm = {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;    // ISO (yyyy-mm-dd)
+  personalNr: string;
+  address: string;
+  postCode: string;
+  city: string;
+  phone: string;
+  email: string;
+  occupation: string;
+};
 
-// Henter Forms-URL fra backend. Faller tilbake til .env hvis 404.
-export async function getPublicMembershipForm(): Promise<MembershipFormSettings> {
-  try {
-    const res = await fetch(`${API_BASE}/api/membership/form`);
-    if (res.ok) return res.json();
-  } catch {
-    /* ignorer */
+export async function submitMembership(payload: MembershipForm): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/membership`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(msg || "Kunne ikke sende søknaden");
   }
-  return {
-    url: import.meta.env.VITE_GOOGLE_FORM_URL ?? "",
-  };
 }

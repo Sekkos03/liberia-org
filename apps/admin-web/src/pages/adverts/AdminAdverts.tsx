@@ -4,10 +4,11 @@ import {
   createAdvert,
   updateAdvert,
   deleteAdvert,
-  setAdvertPublished,
+  setAdvertPublished, // beholder navnet, men den kaller nå /active i advert.ts
   type AdvertDTO,
   type AdvertUpsert,
 } from "../../lib/advert";
+
 import { useState } from "react";
 
 export default function AdminAdverts() {
@@ -48,8 +49,9 @@ export default function AdminAdverts() {
   });
 
   function togglePublished(a: AdvertDTO) {
-    mPublish.mutate({ id: a.id, value: !a.published });
-  }
+  // bruker nå a.active
+  mPublish.mutate({ id: a.id, value: !a.active });
+}
 
   if (q.isLoading) return <div>Laster…</div>;
   if (q.isError) return <div className="text-red-500">Feil: {(q.error as Error).message}</div>;
@@ -86,24 +88,24 @@ export default function AdminAdverts() {
             <div className="flex items-center gap-2">
               {/* status badge + action button – same style as Events */}
               <span
-                className={`px-2 py-1 text-sm rounded-md border ${
-                  a.published
-                    ? "border-emerald-600/30 bg-emerald-900/30 text-emerald-300"
-                    : "border-red-600/30 bg-red-900/30 text-red-300"
-                }`}
-                title="Publisert status"
-              >
-                {a.published ? "Ja" : "Nei"}
-              </span>
+  className={`px-2 py-1 text-sm rounded-md border ${
+    a.active
+      ? "border-emerald-600/30 bg-emerald-900/30 text-emerald-300"
+      : "border-red-600/30 bg-red-900/30 text-red-300"
+  }`}
+>
+  {a.active ? "Ja" : "Nei"}
+</span>
 
-              <button
-                onClick={() => togglePublished(a)}
-                disabled={mPublish.isPending}
-                className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
-                title={a.published ? "Unpublish" : "Publish"}
-              >
-                {a.published ? "Unpublish" : "Publish"}
-              </button>
+             <button
+  onClick={() => togglePublished(a)}
+  disabled={mPublish.isPending}
+  className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
+  title={a.active ? "Deaktiver" : "Aktiver"}
+>
+  {a.active ? "Unpublish" : "Publish"}
+</button>
+
 
               <button
                 onClick={() => { setEditing(a); setOpen(true); }}
@@ -130,9 +132,16 @@ export default function AdminAdverts() {
           initial={editing ?? undefined}
           onClose={() => { setOpen(false); setEditing(null); }}
           onSubmit={(data) => {
-            if (editing) mUpdate.mutate({ id: editing.id, data });
-            else mCreate.mutate(data);
-          }}
+  const payload: AdvertUpsert = {
+    title: data.title,
+    targetUrl: data.targetUrl,
+    startAt: data.startAt,
+    endAt: data.endAt,
+    imageFile: data.imageFile ?? null,
+  };
+  if (editing) mUpdate.mutate({ id: editing.id, data: payload });
+  else mCreate.mutate(payload);
+}}
         />
       )}
     </div>
@@ -204,7 +213,7 @@ function AdvertModal({
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg px-4 py-2 border border-white/15 hover:bg-white/5">Avbryt</button>
           <button
-            onClick={() => onSubmit({ title, targetUrl, startAt, endAt, imageFile, imageUrl })}
+            onClick={() => onSubmit({ title, targetUrl, startAt, endAt, imageFile })}
             className="rounded-lg px-4 py-2 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10"
           >
             {initial ? "Lagre" : "Opprett"}

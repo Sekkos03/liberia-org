@@ -3,7 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { listPublicAdverts, type PublicAdvert } from "../lib/adverts";
 
 export default function Adverts() {
-  const q = useQuery({ queryKey: ["publicAdverts"], queryFn: listPublicAdverts });
+  const q = useQuery({
+  queryKey: ["publicAdverts", "SIDEBAR"],
+  queryFn: () => listPublicAdverts("SIDEBAR"),
+});
+
 
   const items = q.data ?? [];
   const [idx, setIdx] = useState(0);

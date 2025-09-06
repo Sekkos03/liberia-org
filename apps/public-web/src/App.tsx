@@ -1,39 +1,30 @@
-// public-web/src/App.tsx
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import Home from "./pages/Home";
+import Membership from "./pages/Membership";
+import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
+import Adverts from "./pages/Adverts";
+import Photos from "./pages/Photos";
+import Album from "./pages/Album";
+import Postbox from "./pages/Postbox";
+
+const queryClient = new QueryClient();
 
 export default function App() {
-  const { pathname } = useLocation();
-  const NavLink = ({ to, label }: { to: string; label: string }) => (
-    <Link
-      to={to}
-      className={`px-3 py-2 rounded ${pathname === to ? "bg-black text-white" : "hover:bg-black/10"}`}
-    >
-      {label}
-    </Link>
-  );
-
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b">
-        <div className="max-w-5xl mx-auto p-3 flex gap-2 flex-wrap">
-          <NavLink to="/" label="Hjem" />
-          <NavLink to="/events" label="Arrangement" />
-          <NavLink to="/photos" label="Bilder" />
-          <NavLink to="/adverts" label="Annonser" />
-          <NavLink to="/forms" label="Medlemskap" />
-          <NavLink to="/post" label="Forslag" />
-          <NavLink to="/about" label="Om oss" />
-          <NavLink to="/contact" label="Kontakt" />
-        </div>
-      </header>
-      <main className="flex-1">
-        <div className="max-w-5xl mx-auto p-4">
-          <Outlet />
-        </div>
-      </main>
-      <footer className="border-t text-sm text-gray-500 p-4 text-center">
-        © Liberia Org
-      </footer>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/membership" element={<Membership />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/events/:slug" element={<EventDetail />} />
+        <Route path="/adverts" element={<Adverts />} />
+        <Route path="/photos" element={<Album />} />
+        <Route path="/post" element={<Postbox />} />
+        <Route path="/about" element={<div />} />
+        <Route path="/contact" element={<div />} />
+      </Routes>
+    </QueryClientProvider>
   );
 }

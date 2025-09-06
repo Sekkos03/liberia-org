@@ -1,49 +1,37 @@
-// admin-web/src/lib/membership.ts
-// Admin API for Membership (Google Forms-innstillinger + (ev.) innsendte søknader)
-
 import { http, type Page } from "./api";
 
-/* ---------------------------------- Typer --------------------------------- */
-
-export type MembershipFormSettings = {
-  url: string;          // Google Forms URL (gjerne med ?embedded=true)
-  title?: string;
-  description?: string;
-};
-
-export type MembershipDTO = {
-  id: number;
+/* --------------------------------- Members -------------------------------- */
+export type MemberDTO = {
+  id?: number;
   firstName?: string;
   lastName?: string;
-  email?: string;
-  phone?: string;
+  dateOfBirth?: string; // yyyy-MM-dd
+  personalNr?: string;
+  address?: string;
+  postCode?: string;
   city?: string;
-  createdAt: string;    // ISO
+  phone?: string;
+  email?: string;
+  occupation?: string;
+  createdAt?: string;
 };
 
-/* ------------------------------ Admin-endepunkt ---------------------------- */
-
-// Hent Google Forms-innstillinger (krever auth via http-instansen)
-export async function getMembershipFormSettings(): Promise<MembershipFormSettings> {
-  const res = await http.get<MembershipFormSettings>("/api/admin/membership/form");
+export async function listMemberships(page = 0, size = 50) {
+  const res = await http.get<Page<MemberDTO>>("/api/admin/membership", { params: { page, size } });
   return res.data;
 }
-
-// Lagre/oppdater Google Forms-innstillinger
-export async function saveMembershipFormSettings(
-  input: MembershipFormSettings
-): Promise<MembershipFormSettings> {
-  const res = await http.put<MembershipFormSettings>("/api/admin/membership/form", input);
+export async function getMembership(id: number) {
+  const res = await http.get<MemberDTO>(`/api/admin/membership/${id}`);
   return res.data;
 }
-
-// (Valgfritt) Liste av innsendte søknader hvis backend tilbyr dette
-export async function listMembershipApplications(
-  page = 0,
-  size = 50
-): Promise<Page<MembershipDTO>> {
-  const res = await http.get<Page<MembershipDTO>>("/api/admin/memberships", {
-    params: { page, size },
-  });
+export async function createMembership(body: MemberDTO) {
+  const res = await http.post<MemberDTO>("/api/admin/membership", body);
   return res.data;
+}
+export async function updateMembership(id: number, body: MemberDTO) {
+  const res = await http.put<MemberDTO>(`/api/admin/membership/${id}`, body);
+  return res.data;
+}
+export async function deleteMembership(id: number) {
+  await http.delete(`/api/admin/membership/${id}`);
 }

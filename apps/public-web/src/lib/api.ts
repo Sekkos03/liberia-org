@@ -17,3 +17,8 @@ export function apiGet<T>(path: string): Promise<T> {
     headers: { Accept: "application/json" },
   }).then(handle<T>);
 }
+
+export async function getEvents() {
+  const res = await fetch("/api/events");
+  return res.json();
+}
