@@ -4,11 +4,10 @@ import {
   createAdvert,
   updateAdvert,
   deleteAdvert,
-  setAdvertPublished, // beholder navnet, men den kaller nå /active i advert.ts
+  setAdvertPublished,
   type AdvertDTO,
   type AdvertUpsert,
 } from "../../lib/advert";
-
 import { useState } from "react";
 
 export default function AdminAdverts() {
@@ -49,9 +48,8 @@ export default function AdminAdverts() {
   });
 
   function togglePublished(a: AdvertDTO) {
-  // bruker nå a.active
-  mPublish.mutate({ id: a.id, value: !a.active });
-}
+    mPublish.mutate({ id: a.id, value: !a.active });
+  }
 
   if (q.isLoading) return <div>Laster…</div>;
   if (q.isError) return <div className="text-red-500">Feil: {(q.error as Error).message}</div>;
@@ -74,38 +72,41 @@ export default function AdminAdverts() {
         {items.map((a) => (
           <li key={a.id} className="flex items-center justify-between rounded-xl border border-white/10 p-4">
             <div className="flex items-center gap-4">
-              {a.imageUrl ? (
+              {a.videoUrl ? (
+                <div className="h-12 w-16 rounded-md border border-white/10 grid place-items-center text-xs opacity-70">🎬</div>
+              ) : a.imageUrl ? (
                 <img src={a.imageUrl} alt={a.title} className="h-12 w-16 object-cover rounded-md border border-white/10" />
               ) : (
                 <div className="h-12 w-16 rounded-md border border-white/10 grid place-items-center text-xs opacity-60">no img</div>
               )}
               <div>
-                <div className="font-semibold">{a.title}</div>
+                <div className="font-semibold flex items-center gap-2">
+                  {a.title}
+                  {a.videoUrl && <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-600/30 border border-indigo-400/30 text-indigo-200">Video</span>}
+                </div>
                 {a.targetUrl && <div className="text-xs opacity-70 break-all">{a.targetUrl}</div>}
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* status badge + action button – same style as Events */}
               <span
-  className={`px-2 py-1 text-sm rounded-md border ${
-    a.active
-      ? "border-emerald-600/30 bg-emerald-900/30 text-emerald-300"
-      : "border-red-600/30 bg-red-900/30 text-red-300"
-  }`}
->
-  {a.active ? "Ja" : "Nei"}
-</span>
+                className={`px-2 py-1 text-sm rounded-md border ${
+                  a.active
+                    ? "border-emerald-600/30 bg-emerald-900/30 text-emerald-300"
+                    : "border-red-600/30 bg-red-900/30 text-red-300"
+                }`}
+              >
+                {a.active ? "Publisert" : "Skjult"}
+              </span>
 
-             <button
-  onClick={() => togglePublished(a)}
-  disabled={mPublish.isPending}
-  className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
-  title={a.active ? "Deaktiver" : "Aktiver"}
->
-  {a.active ? "Unpublish" : "Publish"}
-</button>
-
+              <button
+                onClick={() => togglePublished(a)}
+                disabled={mPublish.isPending}
+                className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
+                title={a.active ? "Deaktiver" : "Aktiver"}
+              >
+                {a.active ? "Unpublish" : "Publish"}
+              </button>
 
               <button
                 onClick={() => { setEditing(a); setOpen(true); }}
@@ -132,16 +133,17 @@ export default function AdminAdverts() {
           initial={editing ?? undefined}
           onClose={() => { setOpen(false); setEditing(null); }}
           onSubmit={(data) => {
-  const payload: AdvertUpsert = {
-    title: data.title,
-    targetUrl: data.targetUrl,
-    startAt: data.startAt,
-    endAt: data.endAt,
-    imageFile: data.imageFile ?? null,
-  };
-  if (editing) mUpdate.mutate({ id: editing.id, data: payload });
-  else mCreate.mutate(payload);
-}}
+            const payload: AdvertUpsert = {
+              title: data.title,
+              targetUrl: data.targetUrl,
+              startAt: data.startAt,
+              endAt: data.endAt,
+              imageFile: data.imageFile ?? null,
+              videoFile: data.videoFile ?? null,
+            };
+            if (editing) mUpdate.mutate({ id: editing.id, data: payload });
+            else mCreate.mutate(payload);
+          }}
         />
       )}
     </div>
@@ -162,7 +164,7 @@ function AdvertModal({
   const [startAt, setStartAt] = useState(initial?.startAt ?? "");
   const [endAt, setEndAt] = useState(initial?.endAt ?? "");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? "");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
@@ -198,14 +200,14 @@ function AdvertModal({
           </label>
 
           <label className="space-y-1 md:col-span-2">
-            <span className="text-sm opacity-80">Bilde (last opp fra PC)</span>
+            <span className="text-sm opacity-80">Bilde (valgfritt)</span>
             <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
                    className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2" />
           </label>
 
           <label className="space-y-1 md:col-span-2">
-            <span className="text-sm opacity-80">Eller bilde-URL (valgfritt)</span>
-            <input placeholder="https://…" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
+            <span className="text-sm opacity-80">Video (valgfritt)</span>
+            <input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
                    className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2" />
           </label>
         </div>
@@ -213,7 +215,7 @@ function AdvertModal({
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg px-4 py-2 border border-white/15 hover:bg-white/5">Avbryt</button>
           <button
-            onClick={() => onSubmit({ title, targetUrl, startAt, endAt, imageFile })}
+            onClick={() => onSubmit({ title, targetUrl, startAt, endAt, imageFile, videoFile })}
             className="rounded-lg px-4 py-2 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10"
           >
             {initial ? "Lagre" : "Opprett"}

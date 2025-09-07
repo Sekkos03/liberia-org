@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 // Update the import path if Navbar is located elsewhere, for example:
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 // Or create the Navbar.tsx file in ../components/ if it does not exist.
 import "./home.css";
 

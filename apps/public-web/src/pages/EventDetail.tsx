@@ -1,13 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Navigate , Link, useParams } from "react-router-dom";
 import { apiGet } from "../lib/api";
 import type { EventDto } from "./Events";
 import { useEffect, useMemo, useState, type JSX } from "react";
-import Footer from "../../components/Footer";
-import Navbar from "../../components/Navbar";
+import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
 
 export default function EventDetail() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug } = useParams();
+if (slug === "calendar") {
+  return <Navigate to="/events/calendar" replace />;
+}
 
   const q = useQuery({
     queryKey: ["event", slug],
@@ -54,18 +57,26 @@ export default function EventDetail() {
       )}
 
       {/* Navigasjon / kalenderknapp */}
-      <div className="mt-10 flex items-center justify-between">
-        <Link to="/events" className="text-[#16254a] hover:underline">
-          ← Til kalender
-        </Link>
-        <Link
-          to="/events"
-          className="inline-flex items-center rounded-md bg-[#16254a] text-white px-4 py-2 hover:opacity-95"
-        >
-          Se alle planlagte aktiviteter
-        </Link>
-        <Footer/>
-      </div>
+      <div className="mt-10 flex items-center justify-between flex-wrap gap-3">
+  <Link to="/events" className="text-[#16254a] hover:underline">
+    ← Til liste
+  </Link>
+  <div className="flex gap-2">
+    <Link
+      to="/events/calendar"
+      className="inline-flex items-center rounded-md border px-4 py-2 hover:bg-gray-50"
+    >
+      Åpne kalender
+    </Link>
+    <Link
+      to="/events"
+      className="inline-flex items-center rounded-md bg-[#16254a] text-white px-4 py-2 hover:opacity-95"
+    >
+      Se alle planlagte aktiviteter
+    </Link>
+  </div>
+</div>
+
     </article>
   );
 }

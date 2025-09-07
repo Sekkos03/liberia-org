@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { submitMembership, type MembershipForm } from "../lib/membership";
-import Navbar from "../../components/Navbar";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 /** Skjemaet er designet med samme “kort i midten + progressbar”-følelse
  *  som eksempelet du viste. Fargene er de samme som på forsiden. */
@@ -138,6 +139,7 @@ export default function Membership() {
           </form>
         </div>
       </div>
+      <Footer/>
     </div>
   );
 }

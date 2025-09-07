@@ -10,9 +10,11 @@ export type AdvertDTO = {
   targetUrl?: string | null;
   placement?: "SIDEBAR" | "HEADER" | string;
   imageUrl?: string | null;
+  /** Valgfritt felt dersom backend støtter video */
+  videoUrl?: string | null;
   startAt?: string | null; // ISO
   endAt?: string | null;   // ISO
-  active: boolean;         // <— API-feltet heter active
+  active: boolean;         // aktiv/publisert
   createdAt?: string;
   updatedAt?: string;
 };
@@ -22,7 +24,8 @@ export type AdvertUpsert = {
   targetUrl?: string;
   startAt?: string;        // ISO
   endAt?: string;          // ISO
-  imageFile?: File | null; // valgfrie nye filer ved opprett/oppdater
+  imageFile?: File | null; // valgfritt
+  videoFile?: File | null; // valgfritt
 };
 
 /* ------------------------------ Admin endpoints --------------------------- */
@@ -38,51 +41,61 @@ export async function listAdminAdverts(
 }
 
 export async function createAdvert(body: AdvertUpsert): Promise<AdvertDTO> {
-  // 1) Opprett med JSON
-  const createPayload = {
-    title: body.title,
-    targetUrl: body.targetUrl ?? null,
-    startAt: body.startAt ?? null,
-    endAt: body.endAt ?? null,
-  };
-  const created = (await http.post<AdvertDTO>("/api/admin/adverts", createPayload)).data;
+  // 1) Opprett metadata
+  const created = (
+    await http.post<AdvertDTO>("/api/admin/adverts", {
+      title: body.title,
+      targetUrl: body.targetUrl ?? null,
+      startAt: body.startAt ?? null,
+      endAt: body.endAt ?? null,
+    })
+  ).data;
 
-  // 2) Last opp bilde (valgfritt) til eget endepunkt
+  // 2) Last opp filer (om satt)
   if (body.imageFile) {
     const fd = new FormData();
     fd.append("file", body.imageFile);
-    return (await http.post<AdvertDTO>(`/api/admin/adverts/${created.id}/image`, fd)).data;
+    await http.post<AdvertDTO>(`/api/admin/adverts/${created.id}/image`, fd);
   }
-  return created;
+  if (body.videoFile) {
+    const fd = new FormData();
+    fd.append("file", body.videoFile);
+    await http.post<AdvertDTO>(`/api/admin/adverts/${created.id}/video`, fd);
+  }
+
+  // Returner siste versjon
+  return (await http.get<AdvertDTO>(`/api/admin/adverts/${created.id}`)).data;
 }
 
-export async function updateAdvert(
-  id: number,
-  body: AdvertUpsert
-): Promise<AdvertDTO> {
-  // 1) Oppdater metadata som JSON
-  const updatePayload = {
+export async function updateAdvert(id: number, body: AdvertUpsert): Promise<AdvertDTO> {
+  // 1) Oppdater metadata
+  await http.put<AdvertDTO>(`/api/admin/adverts/${id}`, {
     title: body.title,
     targetUrl: body.targetUrl ?? null,
     startAt: body.startAt ?? null,
     endAt: body.endAt ?? null,
-  };
-  const updated = (await http.put<AdvertDTO>(`/api/admin/adverts/${id}`, updatePayload)).data;
+  });
 
-  // 2) Nytt bilde? last opp separat
+  // 2) Eventuelle nye filer
   if (body.imageFile) {
     const fd = new FormData();
     fd.append("file", body.imageFile);
-    return (await http.post<AdvertDTO>(`/api/admin/adverts/${id}/image`, fd)).data;
+    await http.post<AdvertDTO>(`/api/admin/adverts/${id}/image`, fd);
   }
-  return updated;
+  if (body.videoFile) {
+    const fd = new FormData();
+    fd.append("file", body.videoFile);
+    await http.post<AdvertDTO>(`/api/admin/adverts/${id}/video`, fd);
+  }
+
+  return (await http.get<AdvertDTO>(`/api/admin/adverts/${id}`)).data;
 }
 
 export async function deleteAdvert(id: number): Promise<void> {
   await http.delete(`/api/admin/adverts/${id}`);
 }
 
-// Toggle active (ikke /publish, og ikke JSON-body)
+/** Toggle active (backend endepunkt: POST /active?value=true|false) */
 export async function setAdvertPublished(id: number, value: boolean): Promise<void> {
   await http.post(`/api/admin/adverts/${id}/active`, null, { params: { value } });
 }

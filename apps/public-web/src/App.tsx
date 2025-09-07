@@ -8,6 +8,7 @@ import Adverts from "./pages/Adverts";
 import Photos from "./pages/Photos";
 import Album from "./pages/Album";
 import Postbox from "./pages/Postbox";
+import EventsCalendar from "./pages/EventsCalendar";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/membership" element={<Membership />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/events/calendar" element={<EventsCalendar />} />
         <Route path="/events/:slug" element={<EventDetail />} />
         <Route path="/adverts" element={<Adverts />} />
         <Route path="/photos" element={<Album />} />

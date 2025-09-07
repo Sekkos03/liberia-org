@@ -6,15 +6,14 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.time.OffsetDateTime;
+import java.util.Locale;
 
 @Entity
 @Table(name = "adverts", indexes = {
         @Index(name = "idx_adverts_slug", columnList = "slug", unique = true),
         @Index(name = "idx_adverts_active", columnList = "active")
 })
-@Getter
-@Setter
-@ToString
+@Getter @Setter @ToString
 public class Advert {
 
     @Id
@@ -51,7 +50,7 @@ public class Advert {
     private Long sizeBytes;
 
     @Column(name = "image_url", length = 512)
-    private String imageUrl;
+    private String imageUrl; // kan også brukes til video-url om det ikke lastes opp fil
 
     @Column(nullable = false)
     private boolean active = false;
@@ -67,5 +66,32 @@ public class Advert {
 
     public enum Placement {
         HOME_TOP, SIDEBAR, FOOTER, INLINE
+    }
+
+    @PrePersist
+    void onCreate() {
+        final var now = OffsetDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+
+        if (this.slug == null || this.slug.isBlank()) {
+            this.slug = slugify(this.title);
+        }
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        this.updatedAt = OffsetDateTime.now();
+        if (this.slug == null || this.slug.isBlank()) {
+            this.slug = slugify(this.title);
+        }
+    }
+
+    private static String slugify(String input) {
+        if (input == null) return null;
+        String s = input.toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+        return s.isBlank() ? null : s;
     }
 }

@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState, type JSX } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { apiGet } from "../lib/api";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import PlannedActivities from "../components/PlannedActivities";
 
 /** API-modell */
 export type EventDto = {
@@ -62,6 +63,7 @@ export default function Events() {
           </div>
         </div>
       </section>
+      
 
       {/* NESTE EVENT – kort med countdown */}
       <section className="max-w-3xl mx-auto px-4 mt-8">
@@ -98,50 +100,10 @@ export default function Events() {
         </div>
       </section>
 
-      {/* PLANNED ACTIVITIES */}
-      <section className="max-w-6xl mx-auto px-4 mt-12">
-        <h3 className="text-2xl font-semibold text-center">Planned Activities</h3>
+      <section className="mt-16">
+  <PlannedActivities />
+</section>
 
-        <div className="mt-8 grid md:grid-cols-2 gap-8">
-          {upcoming.length === 0 && (
-            <div className="col-span-full text-center text-gray-500">
-              Ingen planlagte aktiviteter.
-            </div>
-          )}
-
-          {upcoming.map(e => (
-            <Link
-              key={e.id}
-              to={`/events/${e.slug}`}
-              className="rounded-xl border border-gray-300 hover:shadow-md transition bg-white"
-            >
-              <div className="p-4">
-                <div className="text-sm text-gray-500">{formatDate(e.startAt)}</div>
-                <div className="mt-1 font-medium">{e.title}</div>
-                {e.location && <div className="text-sm text-gray-600 mt-0.5">{e.location}</div>}
-                {e.summary && <p className="text-sm text-gray-600 mt-2 line-clamp-2">{e.summary}</p>}
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Eldre events – enkel liste under */}
-        {past.length > 0 && (
-          <div className="mt-14">
-            <h4 className="text-lg font-semibold mb-4">Tidligere</h4>
-            <ul className="space-y-3">
-              {past.map(e => (
-                <li key={e.id} className="rounded-lg border bg-gray-50 hover:bg-gray-100 transition">
-                  <Link to={`/events/${e.slug}`} className="flex items-center justify-between p-3">
-                    <div className="font-medium">{e.title}</div>
-                    <div className="text-sm text-gray-500">{formatDate(e.startAt)}</div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
       <Footer/>
     </div>
   );
