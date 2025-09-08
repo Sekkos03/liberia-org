@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { API_BASE } from "../lib/api"; // <- denne finnes i ditt api.ts
+import { API_BASE } from "../lib/events"; // <- denne finnes i ditt api.ts
 import Navbar from "../components/Navbar"; // hvis filen heter/ligger annerledes, oppdater path
 import axios from "axios";
 import Footer from "../components/Footer";

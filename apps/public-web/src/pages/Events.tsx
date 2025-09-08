@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type JSX } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { apiGet } from "../lib/api";
+import { apiGet } from "../lib/events";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import PlannedActivities from "../components/PlannedActivities";
@@ -17,6 +17,7 @@ export type EventDto = {
   coverImageUrl?: string | null;
   startAt: string; // ISO
   endAt?: string | null; // ISO
+  galleryAlbumId?: number | null;
 };
 
 export default function Events() {

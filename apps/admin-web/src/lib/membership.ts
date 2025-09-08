@@ -1,4 +1,4 @@
-import { http, type Page } from "./api";
+import { http, type Page } from "./events";
 
 /* --------------------------------- Members -------------------------------- */
 export type MemberDTO = {

@@ -1,64 +1,51 @@
-// public-web/src/lib/albums.ts
-export const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+// lib/albums.ts
+import { apiGet } from "./events";
 
-async function handle<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${res.statusText}${txt ? ` – ${txt}` : ""}`);
-  }
-  if (res.status === 204) return undefined as unknown as T;
-  return res.json() as Promise<T>;
-}
-
-export function apiGet<T>(path: string): Promise<T> {
-  return fetch(`${API_BASE}${path}`, {
-    credentials: "omit",
-    headers: { Accept: "application/json" },
-  }).then(handle<T>);
-}
-
-/** Minimal Page-type når backend returnerer Spring Page */
-export type Page<T> = {
-  content: T[];
-  totalElements?: number;
-  totalPages?: number;
-  size?: number;
-  number?: number;
-};
-
-/** Events (public) */
-export type PublicEvent = {
-  slug: string;
-  title: string;
-  summary?: string | null;
-  startAt?: string | null;
-  endAt?: string | null;
-};
-export function listPublicEvents(): Promise<PublicEvent[]> {
-  return apiGet(`/api/events`);
-}
-
-/** Albums (public) */
 export type PublicAlbum = {
   id: number;
   slug: string;
   title: string;
+  description?: string | null;
   coverUrl?: string | null;
-  photoCount: number;
+  eventSlug?: string | null;
+  eventTitle?: string | null;
 };
-export type PublicPhoto = { id: number; url: string; caption?: string | null };
 
-/**
- * Kan være enten en plain liste (PublicAlbum[]) ELLER en Page<PublicAlbum>
- * avhengig av backend-endepunktet.
- */
-export function listPublicAlbums(): Promise<PublicAlbum[] | Page<PublicAlbum>> {
-  return apiGet(`/api/albums`);
+export type Page<T> = { content: T[]; totalElements?: number; totalPages?: number; size?: number; number?: number };
+
+export async function listPublicAlbums(
+  page: number = 0,
+  size: number = 48
+): Promise<PublicAlbum[] | Page<PublicAlbum>> {
+  const data: any = await apiGet(`/api/albums?page=${page}&size=${size}`);
+
+  const raw =
+    Array.isArray(data)
+      ? data
+      : Array.isArray(data?.content)
+      ? data.content
+      : Array.isArray(data?._embedded?.albums)
+      ? data._embedded.albums
+      : [];
+
+  // returner Page hvis backenden sendte Page
+  if (!Array.isArray(data) && Array.isArray(data?.content)) {
+    return { ...data, content: raw.map(normalizeAlbum) };
+  }
+  return raw.map(normalizeAlbum);
 }
 
-export function getPublicAlbum(
-  slug: string
-): Promise<{ album: PublicAlbum; photos: PublicPhoto[] }> {
-  return apiGet(`/api/albums/${slug}`);
+function normalizeAlbum(a: any): PublicAlbum {
+  const cover =
+    a?.coverUrl ?? a?.coverImageUrl ?? a?.coverPhotoUrl ?? a?.imageUrl ?? a?.thumbnailUrl ?? a?.coverPhoto?.url ?? null;
+
+  return {
+    id: a?.id ?? a?.albumId,
+    slug: a?.slug ?? String(a?.id ?? ""),
+    title: a?.title ?? a?.name ?? "Album",
+    description: a?.description ?? null,
+    coverUrl: cover,
+    eventSlug: a?.eventSlug ?? a?.event?.slug ?? null,
+    eventTitle: a?.eventTitle ?? a?.event?.title ?? null,
+  };
 }

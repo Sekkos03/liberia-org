@@ -1,4 +1,4 @@
-import { API_BASE } from "./api";
+import { API_BASE } from "./events";
 
 export type SuggestionCreate = {
   name?: string;

@@ -8,7 +8,7 @@ import {
   updateEvent,
   type EventDTO,
   type EventUpsertRequest,
-} from '../../lib/api';
+} from '../../lib/events';
 
 type FormState = {
   id?: number | null;

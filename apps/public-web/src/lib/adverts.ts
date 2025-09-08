@@ -1,108 +1,89 @@
 // src/lib/adverts.ts
-// Ingen imports fra api.ts – alt ligger lokalt her.
+import { apiGet } from "./events";
 
 export type MediaKind = "IMAGE" | "VIDEO";
 
 export interface Advert {
   id: number | string;
   title: string;
-  summary?: string;
   description?: string;
-  mediaType: MediaKind;  // "IMAGE" | "VIDEO"
-  mediaUrl: string;      // cover-bilde eller video-fil
-  posterUrl?: string;    // poster for video
+  mediaType: MediaKind;   // "IMAGE" | "VIDEO"
+  mediaUrl: string;       // bilde eller video
+  posterUrl?: string;
+  targetUrl?: string;
   createdAt?: string;
   updatedAt?: string;
-  // evt. flere felt fra backend ignoreres trygt
+  active?: boolean;
 }
 
-/* ---------------------- HTTP-hjelpere (kun for adverts) ---------------------- */
-
-/** Bygger absolutt URL fra relativ path, respekterer VITE_API_BASE_URL i prod. */
-function buildUrl(path: string): string {
-  if (!path) return "";
-  if (/^https?:\/\//i.test(path)) return path;
-  const base = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
-  const p = path.startsWith("/") ? path : `/${path}`;
-  // I dev med vite-proxy kan vi sende /api/* direkte; i prod prefixer vi med base.
-  if (base && !p.startsWith("/api/")) return `${base}${p}`;
-  return p;
-}
-
-async function getJSON<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = buildUrl(path);
-  const res = await fetch(url, {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json", ...(init?.headers ?? {}) },
-    ...init,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`);
-  }
-  return (await res.json()) as T;
-}
-
-/* --------------------------- Domenelogikk / normalisering --------------------------- */
-
-/** Henter alle annonser. Prøver /api/adverts først (dev-proxy), faller tilbake til /adverts. */
+/** Public: hent publiserte annonser. */
 export async function fetchAdverts(): Promise<Advert[]> {
-  try {
-    const list = await getJSON<any[]>("/api/adverts");
-    return normalizeList(list);
-  } catch {
-    const list = await getJSON<any[]>("/adverts");
-    return normalizeList(list);
-  }
-}
+  // NB: bruk apiGet (samme som Events) => riktig basepath bak proxy
+  const data: any = await apiGet("/api/adverts");
 
-function normalizeList(list: any[]): Advert[] {
-  return (list ?? [])
-    .filter((x) => x.active !== false)        // filtrer ut ikke-publiserte om de skulle lekke ut
+  const raw: any[] =
+    Array.isArray(data)
+      ? data
+      : Array.isArray(data?.content)
+      ? data.content
+      : Array.isArray(data?._embedded?.adverts)
+      ? data._embedded.adverts
+      : [];
+
+  return raw
+    .filter((a) => a && (a.active ?? true))
     .map(normalizeAdvert);
 }
 
-/** Gjør relative URL-er absolutte, bestemmer mediaType fra contentType/filendelse. */
-function normalizeAdvert(a: any): Advert {
-  const raw = a.mediaUrl || a.imageUrl || a.url || a.fileUrl || a.path || "";
+/* -------------------- normalisering / helpers -------------------- */
 
-  // media-type: eksplisitt -> contentType -> filending
-  const byContent =
-    typeof a.contentType === "string" && a.contentType.toLowerCase().startsWith("video")
-      ? "VIDEO"
-      : "IMAGE";
-  const byExt = /\.(mp4|webm|ogg)$/i.test(String(raw)) ? "VIDEO" : "IMAGE";
-  const mediaType: MediaKind = (a.mediaType as MediaKind) || (byContent as MediaKind) || (byExt as MediaKind);
+function absUrl(url?: string): string {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/uploads/") || url.startsWith("/files/") || url.startsWith("/api/")) return url;
+  return url.startsWith("/") ? url : `/${url}`;
+}
+
+function guessKindFrom(a: any, raw: string): MediaKind {
+  if (a?.mediaKind === "VIDEO" || a?.mediaType === "VIDEO") return "VIDEO";
+  if (a?.mediaKind === "IMAGE" || a?.mediaType === "IMAGE") return "IMAGE";
+  if (typeof a?.contentType === "string") {
+    const ct = a.contentType.toLowerCase();
+    if (ct.startsWith("video/")) return "VIDEO";
+    if (ct.startsWith("image/")) return "IMAGE";
+  }
+  if (/\.(mp4|webm|ogg)$/i.test(raw)) return "VIDEO";
+  return "IMAGE";
+}
+
+function normalizeAdvert(a: any): Advert {
+  // Entitet: imageUrl + (ev. fileName), DTO: mediaUrl (+ mediaKind/contentType)
+  const rawMedia =
+    a.mediaUrl ||
+    a.imageUrl ||
+    (a.fileName ? `/uploads/adverts/${a.fileName}` : "") ||
+    a.url ||
+    a.path ||
+    "";
+
+  const mediaUrl = absUrl(rawMedia);
+  const mediaType = guessKindFrom(a, String(rawMedia));
 
   return {
     id: a.id ?? a.slug ?? crypto.randomUUID(),
     title: a.title ?? a.name ?? "Advert",
-    summary: a.summary,
-    description: a.description,
+    description: a.description ?? a.summary ?? "",
     mediaType,
-    mediaUrl: absUrl(raw),
+    mediaUrl,
     posterUrl: a.posterUrl ? absUrl(a.posterUrl) : undefined,
+    targetUrl: a.targetUrl ? absUrl(a.targetUrl) : undefined,
     createdAt: a.createdAt,
     updatedAt: a.updatedAt,
+    active: a.active,
   };
 }
 
-/** Gjør relative filbaner absolutte. */
-export function absUrl(url?: string): string {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-
-  // Vanlige mønstre fra backend
-  if (url.startsWith("/api/")) return url;
-  if (url.startsWith("/uploads/") || url.startsWith("/files/")) return `/api${url}`;
-
-  const base = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
-  const p = url.startsWith("/") ? url : `/${url}`;
-  return base ? `${base}${p}` : p;
-}
-
-/** Nyttig util om du trenger å vise bilder/video separat andre steder. */
+/** Deler liste i bilder og videoer (nyttig for visning) */
 export function splitByKind(items: Advert[]) {
   const images = items.filter((x) => x.mediaType === "IMAGE");
   const videos = items.filter((x) => x.mediaType === "VIDEO");

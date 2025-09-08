@@ -1,5 +1,5 @@
 // admin-web/src/lib/suggestions.ts
-import { http, type Page } from "./api";
+import { http, type Page } from "./events";
 
 /* ---------------------------------- Typer ---------------------------------- */
 

@@ -6,9 +6,11 @@ import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import Adverts from "./pages/Adverts";
 import Photos from "./pages/Photos";
-import Album from "./pages/Album";
 import Postbox from "./pages/Postbox";
 import EventsCalendar from "./pages/EventsCalendar";
+import AboutUs from "./pages/AboutUs";
+import Constitution from "./pages/Constitution";
+import WhatsAppGuidelines from "./pages/WhatsAppGuidelines";
 
 const queryClient = new QueryClient();
 
@@ -22,10 +24,11 @@ export default function App() {
         <Route path="/events/calendar" element={<EventsCalendar />} />
         <Route path="/events/:slug" element={<EventDetail />} />
         <Route path="/adverts" element={<Adverts />} />
-        <Route path="/photos" element={<Album />} />
+        <Route path="/photos" element={<Photos />} />
         <Route path="/post" element={<Postbox />} />
-        <Route path="/about" element={<div />} />
-        <Route path="/contact" element={<div />} />
+        <Route path="/about" element={<AboutUs/>} />
+        <Route path="/about/whatsapp-guidelines" element={<WhatsAppGuidelines />} />
+        <Route path="/about/constitution" element={<Constitution />} />
       </Routes>
     </QueryClientProvider>
   );

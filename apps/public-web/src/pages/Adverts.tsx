@@ -1,46 +1,31 @@
+// src/pages/Adverts.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { type Advert, fetchAdverts } from "../lib/adverts";
+import { fetchAdverts as loadAdverts, splitByKind, type Advert } from "../lib/adverts";
 
-/** Auto-advance hvert 7. sekund */
 const SLIDE_MS = 7_000;
 
-export default function AdvertsPage() {
-  const [items, setItems] = useState<Advert[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function Adverts() {
+  const q = useQuery({
+    queryKey: ["adverts"],
+    queryFn: () => loadAdverts(),
+  });
 
-  // slideshow
+  const items = useMemo(() => {
+    const list = (q.data ?? []).slice();
+    list.sort((a, b) => {
+      const da = a.createdAt ? Date.parse(a.createdAt) : 0;
+      const db = b.createdAt ? Date.parse(b.createdAt) : 0;
+      return db - da;
+    });
+    return list;
+  }, [q.data]);
+
   const [idx, setIdx] = useState(0);
   const timerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    fetchAdverts()
-      .then((list) => {
-        if (!mounted) return;
-        // sortér nyeste først
-        list.sort((a, b) => {
-          const da = a.createdAt ? Date.parse(a.createdAt) : 0;
-          const db = b.createdAt ? Date.parse(b.createdAt) : 0;
-          return db - da;
-        });
-        setItems(list);
-        setError(null);
-      })
-      .catch((e) => {
-        console.error(e);
-        setError("Failed to fetch");
-      })
-      .finally(() => mounted && setLoading(false));
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // auto-advance
   useEffect(() => {
     if (!items.length) return;
     if (timerRef.current) window.clearInterval(timerRef.current);
@@ -52,14 +37,10 @@ export default function AdvertsPage() {
     };
   }, [items]);
 
-  const current = items[idx];
+  useEffect(() => setIdx(0), [items.length]);
 
-  // del opp i bilde/video til listene under
-  const { images, videos } = useMemo(() => {
-    const images = items.filter((x) => x.mediaType === "IMAGE");
-    const videos = items.filter((x) => x.mediaType === "VIDEO");
-    return { images, videos };
-  }, [items]);
+  const current = items[idx];
+  const { images, videos } = useMemo(() => splitByKind(items), [items]);
 
   return (
     <div className="adverts">
@@ -68,10 +49,8 @@ export default function AdvertsPage() {
       <main className="adverts__wrap">
         <h1 className="adverts__title">Adverts</h1>
 
-        {/* Slideshow */}
         <section className="hero">
           <div className="hero__frame">
-            {/* venstre pil */}
             <button
               className="hero__ctrl"
               aria-label="Forrige"
@@ -84,24 +63,21 @@ export default function AdvertsPage() {
             </button>
 
             <div className="hero__stage">
-              {loading && <div className="hero__empty">Laster…</div>}
+              {q.isLoading && <div className="hero__empty">Laster…</div>}
 
-              {!loading && error && (
+              {!q.isLoading && q.isError && (
                 <div className="hero__error" role="alert">
-                  Feil: {error}
+                  Feil: {(q.error as Error)?.message ?? "Failed to fetch"}
                 </div>
               )}
 
-              {!loading && !error && !items.length && (
+              {!q.isLoading && !q.isError && !items.length && (
                 <div className="hero__empty">Ingen annonser publisert enda.</div>
               )}
 
-              {!loading && !error && current && (
-                <Slide key={current.id} item={current} />
-              )}
+              {!q.isLoading && !q.isError && current && <Slide key={String(current.id)} item={current} />}
             </div>
 
-            {/* høyre pil */}
             <button
               className="hero__ctrl"
               aria-label="Neste"
@@ -112,7 +88,6 @@ export default function AdvertsPage() {
             </button>
           </div>
 
-          {/* indikator-ruter + fremdrift */}
           <div className="hero__dots">
             {items.map((_, i) => (
               <button
@@ -124,30 +99,20 @@ export default function AdvertsPage() {
             ))}
           </div>
           <div className="hero__progress">
-            <span
-              key={idx /* restart animasjon */}
-              className="hero__bar"
-              style={{ animationDuration: `${SLIDE_MS}ms` }}
-            />
+            <span key={idx} className="hero__bar" style={{ animationDuration: `${SLIDE_MS}ms` }} />
           </div>
         </section>
 
-        {/* Lister: bilder & video side-om-side */}
         <section className="lists">
           <div className="listCol">
             <header className="listCol__head">
               <h2>Bildeannonser</h2>
               <span className="listCol__count">{images.length}</span>
             </header>
-
             {images.length === 0 ? (
               <p className="muted">Ingen bilder publisert.</p>
             ) : (
-              <div className="cards">
-                {images.map((a) => (
-                  <Card key={a.id} item={a} />
-                ))}
-              </div>
+              <div className="cards">{images.map((a) => <Card key={String(a.id)} item={a} />)}</div>
             )}
           </div>
 
@@ -156,41 +121,27 @@ export default function AdvertsPage() {
               <h2>Videoannonser</h2>
               <span className="listCol__count">{videos.length}</span>
             </header>
-
             {videos.length === 0 ? (
               <p className="muted">Ingen videoer publisert.</p>
             ) : (
-              <div className="cards">
-                {videos.map((a) => (
-                  <Card key={a.id} item={a} />
-                ))}
-              </div>
+              <div className="cards">{videos.map((a) => <Card key={String(a.id)} item={a} />)}</div>
             )}
           </div>
         </section>
       </main>
 
       <Footer />
-
-      {/* SIDE-STYLES */}
       <style>{css}</style>
     </div>
   );
 }
 
-/* Enkel slide-visning for hero */
 function Slide({ item }: { item: Advert }) {
   const isVideo = item.mediaType === "VIDEO";
   return (
     <div className="slide">
       {isVideo ? (
-        <video
-          className="slide__media"
-          src={item.mediaUrl}
-          poster={item.posterUrl}
-          controls
-          playsInline
-        />
+        <video className="slide__media" src={item.mediaUrl} poster={item.posterUrl} controls playsInline />
       ) : (
         <img className="slide__media" src={item.mediaUrl} alt={item.title} />
       )}
@@ -199,11 +150,9 @@ function Slide({ item }: { item: Advert }) {
   );
 }
 
-/* Kort som brukes i listene */
 function Card({ item }: { item: Advert }) {
   const isVideo = item.mediaType === "VIDEO";
   const [open, setOpen] = useState(false);
-
   return (
     <>
       <article className="card" onClick={() => setOpen(true)} role="button" tabIndex={0}>
@@ -224,13 +173,10 @@ function Card({ item }: { item: Advert }) {
         </div>
       </article>
 
-      {/* Modal / lightbox */}
       {open && (
         <div className="lightbox" onClick={() => setOpen(false)}>
           <div className="lightbox__inner" onClick={(e) => e.stopPropagation()}>
-            <button className="lightbox__close" onClick={() => setOpen(false)} aria-label="Lukk">
-              ✕
-            </button>
+            <button className="lightbox__close" onClick={() => setOpen(false)} aria-label="Lukk">✕</button>
             {isVideo ? (
               <video src={item.mediaUrl} poster={item.posterUrl} controls autoPlay />
             ) : (
@@ -244,8 +190,7 @@ function Card({ item }: { item: Advert }) {
   );
 }
 
-/* ----------------- CSS ----------------- */
-
+/* CSS fra deg (uendret) */
 const css = `
 /* Layout: header -> innhold -> footer */
 .adverts{display:flex;flex-direction:column;min-height:100vh;}

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Navigate , Link, useParams } from "react-router-dom";
-import { apiGet } from "../lib/api";
+import { apiGet } from "../lib/events";
 import type { EventDto } from "./Events";
 import { useEffect, useMemo, useState, type JSX } from "react";
 import Footer from "../components/Footer";
@@ -39,6 +39,19 @@ if (slug === "calendar") {
       <p className="text-gray-600 mt-1">
         {formatDate(e.startAt)}{e.location ? ` · ${e.location}` : ""}
       </p>
+      
+      // ...inne i komponenten etter tittel/meta:
+        {(e as any).galleryAlbumId && (
+        <div className="mt-4">
+            <Link
+            to={`/photos/${(e as any).galleryAlbumId}`}
+            className="inline-flex items-center rounded-md bg-[#16254a] text-white px-4 py-2 hover:opacity-95"
+            >
+            Se bilder og videoer fra dette eventet
+            </Link>
+        </div>
+        )}
+
 
       {/* Countdown liten strippe */}
       <div className="mt-4 flex gap-3">

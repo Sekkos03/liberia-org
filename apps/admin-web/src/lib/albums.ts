@@ -1,5 +1,5 @@
 // admin-web/src/lib/albums.ts
-import { http, type Page } from "./api";
+import { http, type Page } from "./events";
 
 // Define AlbumUpsert type (adjust fields as needed)
 export type AlbumUpsert = {
