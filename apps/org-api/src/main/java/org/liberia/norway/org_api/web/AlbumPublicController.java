@@ -3,11 +3,17 @@ package org.liberia.norway.org_api.web;
 import lombok.RequiredArgsConstructor;
 import org.liberia.norway.org_api.model.Album;
 import org.liberia.norway.org_api.repository.AlbumRepository;
-import org.liberia.norway.org_api.repository.PhotoRepository;
+import org.liberia.norway.org_api.web.dto.AlbumItemDto;
+import org.liberia.norway.org_api.web.dto.AlbumItemMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.transaction.Transactional;
+
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/albums")
@@ -15,36 +21,100 @@ import java.util.List;
 public class AlbumPublicController {
 
     private final AlbumRepository albumRepo;
-    private final PhotoRepository photoRepo;
 
+    @Value("${app.storage.public-path:/uploads/}")
+    private String publicBasePath; // samme default som FileStorageService
+
+    /* -------------------- LISTE (publiserte) -------------------- */
     @GetMapping
-    public Page<AlbumSummary> list(@RequestParam(defaultValue = "0") int page,
-                                   @RequestParam(defaultValue = "20") int size) {
+    public Page<PublicAlbumListDto> listPublished(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "48") int size) {
 
-        var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return albumRepo.findByIsPublishedTrue(pageable).map(a -> {
-            String cover = a.getCoverPhoto() != null ? a.getCoverPhoto().getUrl() : null;
-            long count = photoRepo.countByAlbum_Id(a.getId());
-            return new AlbumSummary(a.getId(), a.getSlug(), a.getTitle(), a.getDescription(), cover, count);
-        });
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "created_at"));
+        Page<Album> src = albumRepo.findPublished(pageable);
+
+        return src.map(a -> new PublicAlbumListDto(
+                a.getId(),
+                a.getSlug(),
+                safe(a.getTitle()),
+                // Hvis du har eventTitle i entiteten – ellers settes null
+                tryGetEventTitle(a)
+        ));
     }
 
+    /* -------------------- DETALJ (meta + items) -------------------- */
     @GetMapping("/{slug}")
-    public AlbumDetail get(@PathVariable String slug) {
-        Album a = albumRepo.findBySlug(slug).filter(Album::isPublished).orElseThrow();
-        var photos = photoRepo.findByAlbum_IdAndIsPublishedTrueOrderBySortOrderAsc(a.getId())
-                .stream()
-                .map(p -> new PhotoItem(p.getId(), p.getUrl(), p.getCaption(), p.getSortOrder()))
-                .toList();
+    @Transactional
+    public PublicAlbumResponse getOne(@PathVariable String slug) {
+        Album album = albumRepo.findPublishedBySlug(slug)
+                .orElseThrow(() -> new IllegalArgumentException("Album ikke funnet eller ikke publisert"));
 
-        String cover = a.getCoverPhoto() != null ? a.getCoverPhoto().getUrl() : null;
+        List<AlbumItemDto> items = album.getItems().stream()
+                .sorted(Comparator.comparing(Album.MediaItem::getCreatedAt))
+                .map(this::toDtoWithUrlFallback)
+                .collect(Collectors.toList());
 
-        return new AlbumDetail(
-                a.getId(), a.getSlug(), a.getTitle(), a.getDescription(), cover, photos
+        AlbumMetaDto meta = new AlbumMetaDto(
+                album.getId(),
+                album.getSlug(),
+                safe(album.getTitle()),
+                tryGetEventTitle(album),
+                safe(album.getDescription())
         );
+
+        return new PublicAlbumResponse(meta, items);
     }
 
-    public record AlbumSummary(Long id, String slug, String title, String description, String coverUrl, long photoCount) {}
-    public record PhotoItem(Long id, String url, String caption, Integer sortOrder) {}
-    public record AlbumDetail(Long id, String slug, String title, String description, String coverUrl, List<PhotoItem> photos) {}
+    /* -------------------- KUN ITEMS (valgfritt) -------------------- */
+    @GetMapping("/{slug}/items")
+    @Transactional
+    public List<AlbumItemDto> listItems(@PathVariable String slug) {
+        Album album = albumRepo.findPublishedBySlug(slug)
+                .orElseThrow(() -> new IllegalArgumentException("Album ikke funnet eller ikke publisert"));
+
+        return album.getItems().stream()
+                .sorted(Comparator.comparing(Album.MediaItem::getCreatedAt))
+                .map(this::toDtoWithUrlFallback)
+                .collect(Collectors.toList());
+    }
+
+    /* -------------------- Hjelpere -------------------- */
+
+    private AlbumItemDto toDtoWithUrlFallback(Album.MediaItem it) {
+        AlbumItemDto dto = AlbumItemMapper.toDto(it);
+        if ((dto.getUrl() == null || dto.getUrl().isBlank()) && it.getFileName() != null) {
+            String base = publicBasePath.endsWith("/")
+                    ? publicBasePath.substring(0, publicBasePath.length() - 1)
+                    : publicBasePath;
+            dto.setUrl(base + "/albums/" + it.getFileName());
+        }
+        if ((dto.getThumbUrl() == null || dto.getThumbUrl().isBlank()) && it.getFileName() != null) {
+            String base = publicBasePath.endsWith("/")
+                    ? publicBasePath.substring(0, publicBasePath.length() - 1)
+                    : publicBasePath;
+            dto.setThumbUrl(base + "/albums/thumbs/" + it.getFileName());
+        }
+        return dto;
+    }
+
+    private static String safe(String s) { return s == null ? "" : s; }
+
+    // Hvis du har et felt getEventTitle() – ellers returner null
+    private static String tryGetEventTitle(Album a) {
+        try {
+            // Reflekter eller kall hvis du har en getter. For enkelhet: cast via interface/utvid dersom du har.
+            return (String) Album.class.getMethod("getEventTitle").invoke(a);
+        } catch (Exception __) {
+            return null;
+        }
+    }
+
+    /* -------------------- DTO-er for public API -------------------- */
+
+    public record PublicAlbumListDto(Long id, String slug, String title, String eventTitle) { }
+
+    public record AlbumMetaDto(Long id, String slug, String title, String eventTitle, String description) { }
+
+    public record PublicAlbumResponse(AlbumMetaDto album, List<AlbumItemDto> items) { }
 }

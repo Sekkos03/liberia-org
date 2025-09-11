@@ -17,6 +17,7 @@ import AdminAdverts from "./pages/adverts/AdminAdverts"; // justér sti hvis fil
 import "./index.css";
 import AdminMembership from "./pages/membership/AdminMembership";
 import AdminSuggestions from "./pages/suggestions/AdminSuggestions";
+import AdminAlbumDetail from "./pages/admin/AdminAlbumDetail";
 
 const qc = new QueryClient();
 
@@ -29,12 +30,15 @@ const router = createBrowserRouter([
       {
         element: <App />,
         children: [
-          { index: true, element: <Navigate to="/events" replace /> },
+          { index: true, element: <Navigate to="/" replace /> },
           { path: "events", element: <AdminEvents /> },
           { path: "albums", element: <AdminAlbums /> },
           { path: "adverts", element: <AdminAdverts /> },
           {path: "membership", element: <AdminMembership />},
-          {path: "suggestions", element: <AdminSuggestions />}
+          {path: "suggestions", element: <AdminSuggestions />},
+          {path: "/admin/albums/:id", element: <AdminAlbumDetail />}
+
+
         ],
       },
     ],

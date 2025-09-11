@@ -1,13 +1,12 @@
 // admin-web/src/lib/api.ts
 import axios from "axios";
+import { normUrlPath } from "./media";
 
 /* ------------------------------- HTTP client ------------------------------- */
-
 export const API_BASE =
   (import.meta.env.VITE_API_BASE as string) ?? "http://localhost:8080";
 
 function getToken(): string | null {
-  // Try a few common keys to be safe
   return (
     localStorage.getItem("auth_token") ||
     localStorage.getItem("token") ||
@@ -21,19 +20,16 @@ export const http = axios.create({
   timeout: 15000,
 });
 
-// Attach Authorization header if we have a token
 http.interceptors.request.use((cfg) => {
   const t = getToken();
   if (t) {
     cfg.headers = cfg.headers ?? {};
-    // Ensure single "Bearer " prefix (avoid double)
     const value = t.startsWith("Bearer ") ? t : `Bearer ${t}`;
     cfg.headers["Authorization"] = value;
   }
   return cfg;
 });
 
-// If backend says 401, nuke token and send user to login
 http.interceptors.response.use(
   (r) => r,
   (err) => {
@@ -41,7 +37,6 @@ http.interceptors.response.use(
       localStorage.removeItem("auth_token");
       localStorage.removeItem("token");
       localStorage.removeItem("jwt");
-      // Redirect only if we’re not already on login
       if (!location.pathname.includes("/login")) {
         location.assign("/login");
       }
@@ -68,8 +63,8 @@ export type EventDTO = {
   location: string | null;
   coverImageUrl: string | null;
   rsvpUrl: string | null;
-  startAt: string | null; // ISO string from backend (OffsetDateTime)
-  endAt: string | null;   // ISO string
+  startAt: string | null; // ISO
+  endAt: string | null;   // ISO
   galleryAlbumId: number | null;
   isPublished: boolean;
   createdAt?: string | null;
@@ -84,13 +79,41 @@ export type EventUpsertRequest = {
   location: string | null;
   coverImageUrl: string | null;
   rsvpUrl: string | null;
-  startAt: string | null; // send ISO (we convert from datetime-local in UI)
+  startAt: string | null;
   endAt: string | null;
   galleryAlbumId: number | null;
   isPublished: boolean | null;
 };
 
+/* ------------------------------- Normalisering ---------------------------- */
+function normalizeEvent(e: any): EventDTO {
+  const id = Number(e?.id ?? e?.eventId);
 
+  const cover =
+    normUrlPath(e?.coverImageUrl) ??
+    normUrlPath(e?.imageUrl) ??
+    normUrlPath(e?.bannerUrl) ??
+    normUrlPath(e?.posterUrl) ??
+    normUrlPath(e?.url) ??
+    null;
+
+  return {
+    id,
+    slug: e?.slug ?? String(id || ""),
+    title: e?.title ?? e?.name ?? "Event",
+    summary: e?.summary ?? e?.subtitle ?? null,
+    description: e?.description ?? null,
+    location: e?.location ?? e?.place ?? null,
+    coverImageUrl: cover,
+    rsvpUrl: e?.rsvpUrl ?? e?.rsvpURL ?? e?.registrationUrl ?? null,
+    startAt: e?.startAt ?? e?.startsAt ?? e?.start ?? null,
+    endAt: e?.endAt ?? e?.endsAt ?? e?.end ?? null,
+    galleryAlbumId: e?.galleryAlbumId ?? e?.albumId ?? null,
+    isPublished: Boolean(e?.isPublished ?? e?.published ?? e?.active ?? false),
+    createdAt: e?.createdAt ?? null,
+    updatedAt: e?.updatedAt ?? null,
+  };
+}
 
 /* ------------------------------- Auth (login) ------------------------------ */
 export async function login(username: string, password: string): Promise<void> {
@@ -99,42 +122,34 @@ export async function login(username: string, password: string): Promise<void> {
     password,
   });
   const tok = res.data.token;
-  // Store as "auth_token" (our preferred key)
   localStorage.setItem("auth_token", tok.startsWith("Bearer ") ? tok.slice(7) : tok);
 }
 
 /* --------------------------- Admin Events (CRUD) --------------------------- */
-export async function listAdminEvents(
-  page = 0,
-  size = 20
-): Promise<Page<EventDTO>> {
-  const res = await http.get<Page<EventDTO>>("/api/admin/events", {
-    params: { page, size },
-  });
-  return res.data;
+export async function listAdminEvents(page = 0, size = 20): Promise<Page<EventDTO>> {
+  const res = await http.get<Page<EventDTO> | any>("/api/admin/events", { params: { page, size } });
+  if (Array.isArray((res.data as any)?.content)) {
+    const p = res.data as Page<any>;
+    return { ...p, content: p.content.map(normalizeEvent) };
+  }
+  const rows = (Array.isArray(res.data) ? res.data : []) as any[];
+  return { content: rows.map(normalizeEvent), number: 0, size: rows.length, totalElements: rows.length, totalPages: 1 };
 }
 
 export async function createEvent(payload: EventUpsertRequest): Promise<EventDTO> {
-  const res = await http.post<EventDTO>("/api/admin/events", payload);
-  return res.data;
+  const res = await http.post("/api/admin/events", payload);
+  return normalizeEvent(res.data);
 }
 
-export async function updateEvent(
-  id: number,
-  payload: EventUpsertRequest
-): Promise<EventDTO> {
-  const res = await http.put<EventDTO>(`/api/admin/events/${id}`, payload);
-  return res.data;
+export async function updateEvent(id: number, payload: EventUpsertRequest): Promise<EventDTO> {
+  const res = await http.put(`/api/admin/events/${id}`, payload);
+  return normalizeEvent(res.data);
 }
 
 export async function deleteEvent(id: number): Promise<void> {
   await http.delete(`/api/admin/events/${id}`);
 }
 
-export async function setEventPublished(
-  id: number,
-  value: boolean
-): Promise<void> {
-  // Option B: PATCH full method with JSON body
+export async function setEventPublished(id: number, value: boolean): Promise<void> {
   await http.patch(`/api/admin/events/${id}/publish`, { published: value });
 }

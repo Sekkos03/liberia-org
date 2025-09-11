@@ -17,7 +17,7 @@ export type MembershipForm = {
 };
 
 export async function submitMembership(payload: MembershipForm): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/membership`, {
+  const res = await fetch(`${API_BASE}/api/membership/apply`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

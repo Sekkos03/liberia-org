@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;

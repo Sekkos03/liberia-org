@@ -48,7 +48,9 @@ export default function PlannedActivities() {
 
   const { next, upcoming, past } = useMemo(() => {
     const future = events.filter(e => new Date(e.startAt) >= now);
-    const past = events.filter(e => new Date(e.startAt) < now).sort((a, b) => +new Date(b.startAt) - +new Date(a.startAt));
+    const past = events
+      .filter(e => new Date(e.startAt) < now)
+      .sort((a, b) => +new Date(b.startAt) - +new Date(a.startAt));
     const next = future[0] ?? null;
     const upcoming = future.slice(1, 6); // begrens liste
     return { next, upcoming, past };
@@ -67,7 +69,9 @@ export default function PlannedActivities() {
         {!loading && !err && (
           <>
             {/* Featured / Neste event */}
-            {next ? <FeaturedCard e={next} /> : (
+            {next ? (
+              <FeaturedCard e={next} />
+            ) : (
               <div className="mt-6 p-6 border rounded-xl bg-white shadow-sm">
                 <p className="text-gray-600">Ingen kommende eventer er planlagt.</p>
               </div>
@@ -78,7 +82,9 @@ export default function PlannedActivities() {
               <div className="mt-8">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Kommer</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {upcoming.map(e => <SmallCard key={e.id} e={e} />)}
+                  {upcoming.map(e => (
+                    <SmallCard key={e.id} e={e} />
+                  ))}
                 </div>
               </div>
             )}
@@ -90,7 +96,7 @@ export default function PlannedActivities() {
                 <p className="text-gray-500">Ingen tidligere eventer.</p>
               ) : (
                 <ul className="relative border-l pl-5 space-y-5">
-                  {past.slice(0, 6).map((e, i) => (
+                  {past.slice(0, 6).map(e => (
                     <li key={e.id} className="group">
                       <span className="absolute -left-[9px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#1f2a44] ring-4 ring-[#eaf1ff]" />
                       <Link
@@ -103,28 +109,35 @@ export default function PlannedActivities() {
                             {e.title}
                           </div>
                           <div className="text-sm text-gray-600">
-                            {formatTime(e.startAt)}{e.location ? ` · ${e.location}` : ""}
+                            {formatTime(e.startAt)}
+                            {e.location ? ` · ${e.location}` : ""}
                           </div>
                         </div>
-                        <span className="text-[#1f2a44] opacity-70 group-hover:opacity-100">›</span>
                       </Link>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
+
+            {/* Åpne kalender-knapp: mellom "Tidligere" og footer */}
+            <div className="mt-12 flex justify-center">
+              <Link
+                to="/events/calendar"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#16254a] text-white shadow-lg hover:shadow-xl transition-transform duration-150 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#16254a]"
+                aria-label="Åpne kalender"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M7 2v2H5a2 2 0 0 0-2 2v2h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm14 8H3v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10zM5 14h4v4H5v-4zm6 0h4v4h-4v-4z"
+                    fill="currentColor"
+                  />
+                </svg>
+                Åpne kalender
+              </Link>
+            </div>
           </>
         )}
-      </div>
-
-      {/* Sticky kalender-knapp */}
-      <div className="sticky bottom-6 flex justify-end max-w-6xl mx-auto px-4">
-        <Link
-          to="/events/calendar"
-          className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 bg-[#1f2a44] text-white shadow-md hover:shadow-lg hover:brightness-110 transition"
-        >
-          📅 Åpne kalender
-        </Link>
       </div>
     </section>
   );
@@ -193,7 +206,8 @@ function SmallCard({ e }: { e: EventDto }) {
       <DatePill iso={e.startAt} />
       <div className="font-semibold text-[#0f172a] group-hover:underline">{e.title}</div>
       <div className="text-sm text-gray-600">
-        {formatTime(e.startAt)}{e.location ? ` · ${e.location}` : ""}
+        {formatTime(e.startAt)}
+        {e.location ? ` · ${e.location}` : ""}
       </div>
     </Link>
   );
@@ -220,5 +234,8 @@ function DatePill({ iso }: { iso: string }) {
 /* ------------ Helpers ------------ */
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

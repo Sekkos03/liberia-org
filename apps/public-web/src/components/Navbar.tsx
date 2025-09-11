@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import ContactModal from "./ContactModal";
+import UlanLogo from "../assets/Ulan_logo-removebg-preview.png"; // ← NY
 
 type NavItem = { to: string; label: string };
 
@@ -10,10 +11,9 @@ const links: NavItem[] = [
   { to: "/membership", label: "Forms" },
   { to: "/events", label: "Events" },
   { to: "/adverts", label: "Adverts" },
-  { to: "/photos", label: "Photos" },
+  { to: "/albums", label: "Albums" },
   { to: "/post", label: "Post Box" },
   { to: "/about", label: "About us" },
-  // Merk: Contact håndteres som knapp, ikke routing
   { to: "#contact", label: "Contact" },
 ];
 
@@ -23,9 +23,7 @@ export default function Navbar() {
 
   const openContact = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
-    // Lukk mobilmeny om den er åpen
     setOpen(false);
-    // Fyr globalt event som ContactModal lytter på
     window.dispatchEvent(new CustomEvent("contact:open"));
   };
 
@@ -38,10 +36,19 @@ export default function Navbar() {
     <>
       <header className="bg-[#1f2a44] text-white shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Brand */}
-          <div className="flex items-center gap-2 text-lg font-bold">
-            <span className="hidden sm:inline">Liberia Org</span>
-          </div>
+          {/* Brand: logo → hjem */}
+          <Link
+            to="/"
+            className="flex items-center gap-2"
+            aria-label="Liberian Organization in Norway – Home"
+          >
+            <img
+              src={UlanLogo}
+              alt="ULAN – Union of Liberian Associations in Norway"
+              className="h-15 w-15 sm:h-17 sm:w-20 object-contain drop-shadow"
+            />
+            <span className="sr-only">Liberian Organization in Norway</span>
+          </Link>
 
           {/* Desktop nav */}
           <nav className="hidden md:flex gap-6">
@@ -113,13 +120,20 @@ export default function Navbar() {
         )}
       </header>
 
-      {/* Modalen rendres globalt én gang her, tilgjengelig på alle sider */}
+      {/* Kontaktmodal med logo som badge */}
       <ContactModal
         phone="+47 12 34 56 78"
         email="post@liberia-org.no"
         account="1503.45.67890"
         vipps="123456"
         org="999 999 999"
+        badgeContent={
+          <img
+            src={UlanLogo}
+            alt=""        // dekorativ i dette tilfellet
+            className="cBadge__img"
+          />
+        }
       />
     </>
   );

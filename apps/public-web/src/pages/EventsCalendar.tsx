@@ -192,7 +192,17 @@ export default function EventsCalendar() {
           >
             Subscribe to calendar ⤓
           </button>
-        </div>
+    
+      </div>
+      <div className="flex justify-center">
+              <Link
+                to="/events"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#16254a] text-white shadow-lg hover:shadow-xl transition-transform duration-150 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#16254a]"
+                aria-label="Åpne kalender"
+              >
+                Back to Events
+              </Link>
+            </div>
       </main>
 
       <Footer />

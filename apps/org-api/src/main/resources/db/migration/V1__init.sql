@@ -10,6 +10,8 @@ create table if not exists albums (
   updated_at      timestamp not null default now()
 );
 
+
+
 create table if not exists photos (
   id            bigserial primary key,
   album_id      bigint not null references albums(id) on delete cascade,

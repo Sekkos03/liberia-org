@@ -178,4 +178,8 @@ const css = `
 
 .cBadge{display:grid;place-items:center}
 .cCircle{width:160px;height:160px;border-radius:999px;background:#1f2f58}
-`;
+/* logo i badge (fra props) */
+.cBadge img, .cBadge__img{
+  width:150px;height:150px;object-fit:contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.25));
+}`;

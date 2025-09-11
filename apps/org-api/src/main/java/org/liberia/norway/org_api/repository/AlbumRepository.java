@@ -10,13 +10,24 @@ import java.util.Optional;
 
 public interface AlbumRepository extends JpaRepository<Album, Long> {
 
-    Optional<Album> findBySlug(String slug);
+    // Behold gjerne denne hvis du allerede har den
+    @Query(value = "SELECT * FROM albums WHERE slug = :slug LIMIT 1", nativeQuery = true)
+    boolean findBySlug(@Param("slug") String slug);
 
-    boolean existsBySlug(String slug);
+    // Liste over publiserte album som Page
+    @Query(
+        value = """
+                SELECT * FROM albums
+                WHERE is_published = true
+                ORDER BY created_at DESC
+                """,
+        countQuery = "SELECT COUNT(*) FROM albums WHERE is_published = true",
+        nativeQuery = true
+    )
+    Page<Album> findPublished(Pageable pageable);
 
-    Page<Album> findByIsPublishedTrue(Pageable pageable);
-
-    @Query("select count(p) from Photo p where p.album.id = :albumId")
-    long countPhotos(@Param("albumId") Long albumId);
+    // Ett publisert album på slug
+    @Query(value = "SELECT * FROM albums WHERE slug = :slug AND is_published = true LIMIT 1", nativeQuery = true)
+    Optional<Album> findPublishedBySlug(@Param("slug") String slug);
 }
 

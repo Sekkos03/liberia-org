@@ -82,7 +82,7 @@ export default function Membership() {
           <div className="text-white">
             <div className="text-sm uppercase tracking-wide opacity-80">Forms</div>
             <h1 className="text-3xl md:text-4xl font-extrabold">
-              Liberia Organization Membership Registration Form
+              ULAN Membership Registration Form
             </h1>
           </div>
         </div>

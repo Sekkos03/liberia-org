@@ -1,226 +1,251 @@
 package org.liberia.norway.org_api.web;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.liberia.norway.org_api.model.Album;
-import org.liberia.norway.org_api.model.Photo;
 import org.liberia.norway.org_api.repository.AlbumRepository;
-import org.liberia.norway.org_api.repository.PhotoRepository;
-import org.liberia.norway.org_api.service.FileStorageService;
-import org.springframework.data.domain.*;
-import org.springframework.http.MediaType;
+import org.liberia.norway.org_api.web.dto.AlbumItemDto;
+import org.liberia.norway.org_api.web.dto.AlbumItemMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.OffsetDateTime;
-import java.util.*;
+import java.net.URI;
+import java.text.Normalizer;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/albums")
 @RequiredArgsConstructor
 public class AlbumAdminController {
+    @Value("${app.storage.public-path:/uploads}")
+private String publicBasePath;
+
+// Trim trailing "/" og gi fornuftig default
+private String publicBase() {
+    String base = (publicBasePath == null || publicBasePath.isBlank()) ? "/uploads" : publicBasePath;
+    return base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+}
 
     private final AlbumRepository albumRepo;
-    private final PhotoRepository photoRepo;
-    private final FileStorageService storage;
 
-    // -------- Albums CRUD --------
+    // ---------- DTOer ----------
+    public record AdminAlbumDto(
+            Long id,
+            String slug,
+            String title,
+            String description,
+            boolean published,
+            Instant createdAt,
+            Instant updatedAt,
+            Integer itemsCount
+    ) {
+        public static AdminAlbumDto from(Album a) {
+            return new AdminAlbumDto(
+                    a.getId(),
+                    a.getSlug(),
+                    a.getTitle(),
+                    a.getDescription(),
+                    a.isPublished(),
+                    a.getCreatedAt(),
+                    a.getUpdatedAt(),
+                    a.getItems() != null ? a.getItems().size() : 0
+            );
+        }
+    }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AlbumCreateRequest {
+        @NotBlank public String title;
+        public String description;
+        public String slug; // valgfri – genereres fra title hvis tom
+        @JsonAlias({"isPublished","published"})
+        public Boolean published;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AlbumUpdateRequest {
+        public String title;
+        public String description;
+        public String slug;
+        @JsonAlias({"isPublished","published"})
+        public Boolean published;
+        public Long coverPhotoId;
+    }
+
+    // ---------- Hent alle (ADMIN) ----------
+    @GetMapping
+    public Page<AdminAlbumDto> listAdmin(@PageableDefault(size = 48) Pageable pageable) {
+        return albumRepo.findAll(pageable).map(AdminAlbumDto::from);
+    }
+    
+     // ---------- Hent ett album (ADMIN) ----------
+    @GetMapping("/{id}")
+    @Transactional
+    public AdminAlbumDto getOne(@PathVariable Long id) {
+        var album = albumRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Album not found"));
+        return AdminAlbumDto.from(album);
+    }
+
+    // ---------- Create (ADMIN) ----------
     @PostMapping
     @Transactional
-    public AlbumResponse create(@RequestBody AlbumUpsertRequest req) {
-        var album = new Album();
-        album.setTitle(req.title());
-        album.setSlug(uniqueSlug(StringUtils.hasText(req.slug()) ? req.slug() : slugify(req.title())));
-        album.setDescription(req.description());
-        album.setPublished(false);
-        album.setCreatedAt(OffsetDateTime.now());
-        album.setUpdatedAt(OffsetDateTime.now());
-        albumRepo.save(album);
-        return mapAlbum(album, 0);
-    }
-
-    @PutMapping("/{id}")
-    @Transactional
-    public AlbumResponse update(@PathVariable Long id, @RequestBody AlbumUpsertRequest req) {
-        var album = albumRepo.findById(id).orElseThrow();
-        if (StringUtils.hasText(req.title())) album.setTitle(req.title());
-        if (req.slug() != null) {
-            String next = uniqueSlug(req.slug(), album.getId());
-            album.setSlug(next);
-        }
-        if (req.description() != null) album.setDescription(req.description());
-        if (req.isPublished() != null) album.setPublished(req.isPublished());
-        album.setUpdatedAt(OffsetDateTime.now());
-        long count = photoRepo.countByAlbum_Id(album.getId());
-        return mapAlbum(album, count);
-    }
-
-    @DeleteMapping("/{id}")
-    @Transactional
-    public void delete(@PathVariable Long id) {
-        albumRepo.deleteById(id);
-    }
-
-    @GetMapping
-    public Page<AlbumResponse> list(@RequestParam(defaultValue = "0") int page,
-                                    @RequestParam(defaultValue = "20") int size) {
-        var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        var res = albumRepo.findAll(pageable).map(a -> mapAlbum(a, photoRepo.countByAlbum_Id(a.getId())));
-        return res;
-    }
-
-    @PatchMapping("/{id}/publish")
-    public ResponseEntity<Void> setPublished(
-            @PathVariable Long id,
-            @RequestBody Map<String, Boolean> body
-    ) {
-        if (body == null || !body.containsKey("published")) {
+    public ResponseEntity<AdminAlbumDto> create(@RequestBody AlbumCreateRequest req,
+                                                UriComponentsBuilder ucb) {
+        if (req.title == null || req.title.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        boolean published = Boolean.TRUE.equals(body.get("published"));
 
-        Album album = albumRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Album not found: " + id));
+        String baseSlug = (req.slug != null && !req.slug.isBlank())
+                ? slugify(req.slug)
+                : slugify(req.title);
+        String uniqueSlug = ensureUniqueSlug(baseSlug);
 
-        album.setPublished(published);
-        album.setUpdatedAt(OffsetDateTime.now());
+        Album a = new Album();
+        a.setTitle(req.title.trim());
+        a.setDescription(req.description);
+        a.setPublished(Boolean.TRUE.equals(req.published));
+        a.setSlug(uniqueSlug);
 
-        albumRepo.save(album);
-        return ResponseEntity.noContent().build();
+        a = albumRepo.save(a);
+
+        URI location = ucb.path("/api/admin/albums/{id}").buildAndExpand(a.getId()).toUri();
+        return ResponseEntity.created(location).body(AdminAlbumDto.from(a));
     }
 
-
-    @PutMapping("/{id}/cover/{photoId}")
+    // ---------- Update (ADMIN) – hvis du allerede har denne, la den stå ----------
+    @PutMapping("/{id}")
     @Transactional
-    public AlbumResponse setCover(@PathVariable Long id, @PathVariable Long photoId) {
-        var album = albumRepo.findById(id).orElseThrow();
-        var photo = photoRepo.findByIdAndAlbum_Id(photoId, id).orElseThrow();
-        album.setCoverPhoto(photo);
-        album.setUpdatedAt(OffsetDateTime.now());
-        long count = photoRepo.countByAlbum_Id(album.getId());
-        return mapAlbum(album, count);
-    }
+    public AdminAlbumDto update(@PathVariable Long id, @RequestBody AlbumUpdateRequest req) {
+        Album a = albumRepo.findById(id).orElseThrow();
 
-    // -------- Photos (upload & manage) --------
+        if (req.title != null) a.setTitle(req.title.trim());
+        if (req.description != null) a.setDescription(req.description);
+        if (req.published != null) a.setPublished(req.published);
 
-    @PostMapping(value = "/{id}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Transactional
-    public List<PhotoResponse> uploadPhotos(@PathVariable Long id,
-                                            @RequestPart("files") MultipartFile[] files,
-                                            @RequestPart(value = "captions", required = false) List<String> captions) {
-        var album = albumRepo.findById(id).orElseThrow();
-
-        int startOrder = photoRepo.maxSortOrder(id) + 1;
-        List<PhotoResponse> out = new ArrayList<>();
-
-        for (int i = 0; i < files.length; i++) {
-            var f = files[i];
-            var stored = storage.store(f, "photos/" + id);
-            var p = new Photo();
-            p.setAlbum(album);
-            p.setOriginalName(stored.originalName());
-            p.setFileName(stored.fileName());
-            p.setContentType(stored.contentType());
-            p.setSizeBytes(stored.size());
-            p.setUrl(stored.url());
-            p.setCaption(captions != null && i < captions.size() ? captions.get(i) : null);
-            p.setSortOrder(startOrder + i);
-            p.setPublished(true);
-            p.setCreatedAt(OffsetDateTime.now());
-            p.setUpdatedAt(OffsetDateTime.now());
-            photoRepo.save(p);
-            out.add(mapPhoto(p));
+        if (req.slug != null && !req.slug.isBlank()) {
+            String wanted = slugify(req.slug);
+            if (!wanted.equals(a.getSlug())) {
+                a.setSlug(ensureUniqueSlug(wanted));
+            }
         }
-        return out;
+
+        a = albumRepo.save(a);
+        return AdminAlbumDto.from(a);
     }
+    // --- ADD: hent alle items i album (admin) ---
+@GetMapping("/{id}/items")
+@Transactional
+public List<AlbumItemDto> getItems(@PathVariable Long id) {
+    Album album = albumRepo.findById(id).orElseThrow();
 
-    @PutMapping("/photos/{photoId}")
-    @Transactional
-    public PhotoResponse updatePhoto(@PathVariable Long photoId, @RequestBody PhotoUpdateRequest req) {
-        var p = photoRepo.findById(photoId).orElseThrow();
-        if (req.caption() != null) p.setCaption(req.caption());
-        if (req.isPublished() != null) p.setPublished(req.isPublished());
-        if (req.sortOrder() != null) p.setSortOrder(req.sortOrder());
-        p.setUpdatedAt(OffsetDateTime.now());
-        return mapPhoto(p);
-    }
+    return album.getItems().stream()
+            .sorted(Comparator.comparing(Album.MediaItem::getCreatedAt))
+            .map(it -> {
+                AlbumItemDto dto = AlbumItemMapper.toDto(it);
+                // fallback URL hvis kun filnavn er lagret
+                if ((dto.getUrl() == null || dto.getUrl().isBlank()) && it.getFileName() != null) {
+                    String base = publicBase();
+                    dto.setUrl(base + "/albums/" + it.getFileName());
 
-    @DeleteMapping("/photos/{photoId}")
-    @Transactional
-    public void deletePhoto(@PathVariable Long photoId) {
-        photoRepo.deleteById(photoId);
-    }
+                }
+                return dto;
+            })
+            .collect(Collectors.toList());
+}
 
-    // -------- DTOs & helpers --------
+// --- ADD: last opp filer til album (admin) ---
+@PostMapping(path = "/{id}/items", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+@Transactional
+public List<AlbumItemDto> uploadItems(
+        @PathVariable Long id,
+        @RequestPart("files") List<org.springframework.web.multipart.MultipartFile> files
+) throws java.io.IOException {
 
-    public record AlbumUpsertRequest(String title, String slug, String description, Boolean isPublished) {}
+    Album album = albumRepo.findById(id).orElseThrow();
 
-    public record AlbumResponse(
-            Long id, String slug, String title, String description,
-            Boolean isPublished, String coverUrl, Long coverPhotoId,
-            Long photoCount, String createdAt, String updatedAt
-    ) {}
+    // Hvor vi lagrer fysisk (lokal disk). Juster ved behov:
+    java.nio.file.Path root = java.nio.file.Paths.get("uploads", "albums");
+    java.nio.file.Files.createDirectories(root);
 
-    public record PhotoResponse(
-            Long id, Long albumId, String url, String caption,
-            Integer sortOrder, Boolean isPublished, String createdAt, String updatedAt
-    ) {}
+    List<Album.MediaItem> saved = new java.util.ArrayList<>();
 
-    public record PhotoUpdateRequest(String caption, Integer sortOrder, Boolean isPublished) {}
+    for (org.springframework.web.multipart.MultipartFile mf : files) {
+        if (mf.isEmpty()) continue;
 
-    private AlbumResponse mapAlbum(Album a, long photoCount) {
-        String coverUrl = a.getCoverPhoto() != null ? a.getCoverPhoto().getUrl() : null;
-        Long coverId = a.getCoverPhoto() != null ? a.getCoverPhoto().getId() : null;
-        return new AlbumResponse(
-                a.getId(), a.getSlug(), a.getTitle(), a.getDescription(),
-                a.isPublished(), coverUrl, coverId, photoCount,
-                a.getCreatedAt() != null ? a.getCreatedAt().toString() : null,
-                a.getUpdatedAt() != null ? a.getUpdatedAt().toString() : null
-        );
-        // OffsetDateTime -> ISO-8601 strings
-    }
+        // Filnavn: unik + original endelse
+        String original = mf.getOriginalFilename() == null ? "file" : mf.getOriginalFilename();
+        String ext = original.lastIndexOf('.') > -1 ? original.substring(original.lastIndexOf('.')) : "";
+        String storedName = java.util.UUID.randomUUID().toString().replace("-", "") + ext.toLowerCase();
 
-    private PhotoResponse mapPhoto(Photo p) {
-        return new PhotoResponse(
-                p.getId(),
-                p.getAlbum() != null ? p.getAlbum().getId() : null,
-                p.getUrl(),
-                p.getCaption(),
-                p.getSortOrder(),
-                p.isPublished(),
-                p.getCreatedAt() != null ? p.getCreatedAt().toString() : null,
-                p.getUpdatedAt() != null ? p.getUpdatedAt().toString() : null
-        );
-    }
-
-    private String uniqueSlug(String base) {
-        return uniqueSlug(base, null);
-    }
-
-    private String uniqueSlug(String base, Long currentId) {
-        String s = slugify(base);
-        if (!albumRepo.existsBySlug(s) || (currentId != null && albumRepo.findBySlug(s).map(a -> a.getId().equals(currentId)).orElse(false))) {
-            return s;
+        // Lagre fil
+        java.nio.file.Path dest = root.resolve(storedName);
+        try (java.io.InputStream in = mf.getInputStream()) {
+            java.nio.file.Files.copy(in, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
-        // add -2, -3...
-        for (int i = 2; i < 10_000; i++) {
-            String candidate = s + "-" + i;
-            var exists = albumRepo.findBySlug(candidate)
-                    .filter(a -> currentId == null || !a.getId().equals(currentId))
-                    .isPresent();
-            if (!exists) return candidate;
-        }
-        throw new IllegalStateException("Could not generate unique slug");
+
+        // Bestem type (image/video) fra content-type eller endelse
+        String ct = mf.getContentType() == null ? "" : mf.getContentType().toLowerCase();
+        boolean isVideo = ct.startsWith("video/")
+                || ext.equalsIgnoreCase(".mp4") || ext.equalsIgnoreCase(".mov")
+                || ext.equalsIgnoreCase(".mkv") || ext.equalsIgnoreCase(".webm")
+                || ext.equalsIgnoreCase(".avi");
+
+        Album.MediaItem item = new Album.MediaItem();
+        item.setAlbum(album);
+        item.setFileName(storedName);
+        item.setMediaType(isVideo ? Album.MediaType.VIDEO : Album.MediaType.IMAGE);
+        item.setCreatedAt(java.time.Instant.now());
+
+        // Sett URL som kan brukes offentlig
+        String base = publicBasePath.endsWith("/") ? publicBasePath.substring(0, publicBasePath.length()-1) : publicBasePath;
+        item.setUrl(base + "/albums/" + storedName);
+
+        // Legg på albumet (forutsatt cascade på items)
+        album.getItems().add(item);
+        saved.add(item);
     }
 
-    private static String slugify(String input) {
-        String s = (input == null ? "" : input).trim().toLowerCase();
-        s = s.replaceAll("[^a-z0-9]+", "-");
-        s = s.replaceAll("^-+|-+$", "");
-        if (s.isEmpty()) s = "album";
-        return s;
+    // Persister items via albumet
+    albumRepo.saveAndFlush(album);
+
+    // Returnér DTO-er
+    return saved.stream().map(AlbumItemMapper::toDto).collect(Collectors.toList());
+}
+
+
+
+
+
+    // ---------- Hjelpere ----------
+    private String ensureUniqueSlug(String base) {
+        String candidate = base;
+        int i = 2;
+        while (albumRepo.findBySlug(candidate)) {
+            candidate = base + "-" + i++;
+        }
+        return candidate;
+    }
+
+    private static String slugify(String in) {
+        String s = Normalizer.normalize(in, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        s = s.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+        return s.isBlank() ? "album" : s;
     }
 }

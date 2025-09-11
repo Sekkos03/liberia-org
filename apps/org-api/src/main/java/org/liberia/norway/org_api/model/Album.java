@@ -3,66 +3,141 @@ package org.liberia.norway.org_api.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
-@Getter
-@Setter
-@Builder
+import org.liberia.norway.org_api.service.FileStorageService.StoredFile;
+
+@Entity
+@Table(name = "albums")
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(
-    name = "albums",
-    uniqueConstraints = {
-        @UniqueConstraint(name = "uk_albums_slug", columnNames = "slug")
-    }
-)
+@Builder
 public class Album {
+
+    public enum MediaType { IMAGE, VIDEO }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 120, nullable = false)
+    @Column(nullable = false, unique = true, length = 128)
     private String slug;
 
-    @Column(length = 200, nullable = false)
+    @Column(nullable = false, length = 256)
     private String title;
 
-    // DDL says CLOB -> map as @Lob String
     @Lob
-    @Column
+    @Basic(fetch = FetchType.LAZY)   // valgfritt, fint for store tekster
+    @Column(name = "description")
     private String description;
 
-    // Optional FK to photos.id
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cover_photo_id", foreignKey = @ForeignKey(name = "fk_albums_cover"))
-    private Photo coverPhoto;
-
     @Column(name = "is_published", nullable = false)
-    private boolean isPublished; // defaults to false (Java default)
+    private boolean published = false;
 
-    @Column(name = "created_at", nullable = false)
-    private OffsetDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private Instant createdAt;
 
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    /** Mediaelementene som tilhører albumet. */
     @OneToMany(mappedBy = "album", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("sortOrder ASC, id ASC")
-    private Set<Photo> photos = new LinkedHashSet<>();
+    @OrderBy("createdAt ASC")
+    private List<MediaItem> items = new ArrayList<>();
 
     @PrePersist
-    void onCreate() {
-        final OffsetDateTime now = OffsetDateTime.now();
-        createdAt = now;
-        updatedAt = now;
+    public void prePersist() {
+        final Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     @PreUpdate
-    void onUpdate() {
-        updatedAt = OffsetDateTime.now();
+    public void preUpdate() {
+        this.updatedAt = Instant.now();
+    }
+
+    public void addItem(MediaItem it) {
+        if (items == null) items = new ArrayList<>();
+        items.add(it);
+        it.setAlbum(this);
+        // sørg for deterministisk rekkefølge
+        items.sort(Comparator.comparing(MediaItem::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
+    }
+
+    public void removeItem(MediaItem it) {
+        if (items != null) items.remove(it);
+        it.setAlbum(null);
+    }
+
+    /* --------------------- NESTET ENTITY FOR MEDIA --------------------- */
+
+    @Entity
+    @Table(name = "album_items")
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class MediaItem {
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        /** Tilbakepeker til albumet. */
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "album_id", nullable = false)
+        private Album album;
+
+        /** Frivillig tittel/tekst. */
+        @Column(length = 256)
+        private String title;
+
+        /** Direkte visnings-URL dersom satt (brukes først). */
+        @Column(name = "url", length = 1024)
+        private String url;
+
+        /** Alternativt – separate felter om dere skiller bilde/video. */
+        @Column(name = "image_url", length = 1024)
+        private String imageUrl;
+
+        @Column(name = "video_url", length = 1024)
+        private String videoUrl;
+
+        /** Filnavn når fil er lagret lokalt (brukes til /uploads/albums/{fileName}). */
+        @Column(name = "file_name", length = 512)
+        private String fileName;
+
+        /** Thumbnail-forhåndsvisning (valgfritt). */
+        @Column(name = "thumb_url", length = 1024)
+        private String thumbUrl;
+
+        /** MIME-type (image/jpeg, video/mp4, …). */
+        @Column(name = "content_type", length = 128)
+        private String contentType;
+
+        @Column(name = "size_bytes")
+        private Long sizeBytes;
+
+        @Column(name = "created_at", updatable = false)
+        private Instant createdAt;
+        
+        @Enumerated(EnumType.STRING)
+        @Column(name = "media_type", nullable = false)
+        private MediaType mediaType;
+
+        @PrePersist
+        public void prePersist() {
+            this.createdAt = Instant.now();
+        }
+
+        /* (Valgfritt) en enkel "kind" dersom dere ønsker det i DB */
+        @Column(name = "kind", length = 16)
+        private String kind; // "IMAGE" / "VIDEO" (kan settes i controller på upload)
     }
 }

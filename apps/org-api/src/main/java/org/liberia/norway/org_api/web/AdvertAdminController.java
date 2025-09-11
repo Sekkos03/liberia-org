@@ -2,6 +2,7 @@ package org.liberia.norway.org_api.web;
 
 import lombok.RequiredArgsConstructor;
 import org.liberia.norway.org_api.model.Advert;
+import org.liberia.norway.org_api.model.Album;
 import org.liberia.norway.org_api.repository.AdvertRepository;
 import org.liberia.norway.org_api.web.dto.AdvertDto;
 import org.liberia.norway.org_api.web.dto.AdvertMapper;
@@ -101,6 +102,8 @@ public class AdvertAdminController {
         a = repo.save(a);
         return AdvertMapper.toDto(a);
     }
+
+
 
     // ---- UPDATE (MULTIPART) --------------------------------------------------
 

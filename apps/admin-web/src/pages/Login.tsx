@@ -30,7 +30,7 @@ export default function Login() {
       login(data.token);
 
       // go back where we came from or to events
-      const redirectTo = (loc.state as any)?.from?.pathname ?? "/admin/events";
+      const redirectTo = (loc.state as any)?.from?.pathname ?? "/dashboard";
       nav(redirectTo, { replace: true });
     } catch (e: any) {
       setErr(e.message ?? "Login failed");

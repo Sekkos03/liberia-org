@@ -9,6 +9,7 @@ import {
   type AdvertUpsert,
 } from "../../lib/advert";
 import { useState } from "react";
+import { toPublicUrl } from "../../lib/media";
 
 export default function AdminAdverts() {
   const qc = useQueryClient();
@@ -73,9 +74,19 @@ export default function AdminAdverts() {
           <li key={a.id} className="flex items-center justify-between rounded-xl border border-white/10 p-4">
             <div className="flex items-center gap-4">
               {a.videoUrl ? (
-                <div className="h-12 w-16 rounded-md border border-white/10 grid place-items-center text-xs opacity-70">🎬</div>
+                <video
+                  src={toPublicUrl(a.videoUrl)}
+                  className="h-12 w-16 object-cover rounded-md border border-white/10"
+                  muted
+                  loop
+                  playsInline
+                />
               ) : a.imageUrl ? (
-                <img src={a.imageUrl} alt={a.title} className="h-12 w-16 object-cover rounded-md border border-white/10" />
+                <img
+                  src={toPublicUrl(a.imageUrl)}
+                  alt={a.title}
+                  className="h-12 w-16 object-cover rounded-md border border-white/10"
+                />
               ) : (
                 <div className="h-12 w-16 rounded-md border border-white/10 grid place-items-center text-xs opacity-60">no img</div>
               )}
