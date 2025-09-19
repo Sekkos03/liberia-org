@@ -3,7 +3,7 @@ create table if not exists albums (
   id              bigserial primary key,
   slug            varchar(120) not null unique,
   title           varchar(200) not null,
-  description     CLOB,
+  description     text,
   cover_photo_id  bigint,
   is_published    boolean not null default false,
   created_at      timestamp not null default now(),
@@ -81,7 +81,7 @@ create table if not exists adverts (
   id             bigserial primary key,
   slug           varchar(120) not null unique,
   title          varchar(200) not null,
-  description    CLOB,
+  description    text,
   target_url     varchar(512),
   placement      varchar(40) not null, -- HOME_TOP | SIDEBAR | FOOTER | INLINE
   original_name  varchar(255),
@@ -104,9 +104,9 @@ create table if not exists suggestions (
   id             bigserial primary key,
   name           varchar(200),
   email          varchar(320),
-  message        CLOB,
+  message        text,
   status         varchar(20) not null default 'NEW', -- NEW | REVIEWED | ARCHIVED
-  internal_notes CLOB,
+  internal_notes text,
   created_at     TIMESTAMP not null default now()
 );
 
@@ -130,7 +130,7 @@ create table if not exists pages (
   id           bigserial primary key,
   slug         varchar(120) not null unique,
   title        varchar(200) not null,
-  body         CLOB not null,
+  body         text not null,
   published    boolean not null default false,
   published_at timestamp,
   created_at   timestamp not null default now(),
@@ -146,7 +146,7 @@ create table if not exists membership_applications (
   phone           varchar(50),
   address         varchar(400),
   occupation      varchar(200),
-  message         CLOB,
+  message         text,
   created_at      timestamp not null default now()
 );
 create index if not exists idx_membership_created on membership_applications(created_at);
