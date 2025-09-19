@@ -11,7 +11,7 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:5173","http://localhost:3000")
+                        .allowedOrigins("http://localhost:5173","http://localhost:3000", "https://liberia-org-admin.vercel.app" , "https://liberia-org-public.vercel.app/" )
                         .allowedMethods("GET","POST","PUT","DELETE","OPTIONS");
             }
         };

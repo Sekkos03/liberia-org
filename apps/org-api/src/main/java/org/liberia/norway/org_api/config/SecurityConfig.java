@@ -80,7 +80,7 @@ SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws 
 @Bean
 CorsConfigurationSource corsConfigurationSource() {
   var c = new CorsConfiguration();
-  c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174"));
+  c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174", "https://liberia-org-admin.vercel.app" , "https://liberia-org-public.vercel.app/"));
   c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
   c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
   c.setExposedHeaders(List.of("Location", "Content-Disposition"));
