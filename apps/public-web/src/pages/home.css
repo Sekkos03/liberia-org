@@ -1,0 +1,68 @@
+/* === Side-ramme: gjør innholdet til en kolonne slik at footer havner nederst === */
+.page-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === Hero med bakgrunn === */
+.home-hero {
+  flex: 1;                        /* fyll høyden mellom navbar og footer */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  padding: 6rem 1rem 7rem;        /* god luft over/under */
+
+  /* bakgrunnsbildet ditt */
+  background-image: url("/src/assets/Ulan_Bakgrunn.PNG");
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+}
+
+/* diskret overlay for lesbarhet (fjern ved å sette opacity til 0 eller ta bort hele) */
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 17, 33, 0.10);
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative; /* over overlay */
+  z-index: 1;
+  max-width: 900px;
+}
+
+/* Typografi */
+.hero-title {
+  color: #fff;
+  margin: 0;
+  font-weight: 800;
+  line-height: 1.15;
+  font-size: clamp(2rem, 1.2rem + 3.2vw, 3.5rem);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.hero-subtitle {
+  color: #eaf0ff;
+  margin-top: 0.75rem;
+  font-size: clamp(1rem, 0.9rem + 0.6vw, 1.25rem);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Knapper under hero-teksten */
+.actions {
+  margin-top: 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Sørg for at en eventuell “fixed” footer ikke kolliderer */
+footer, .site-footer { position: static; }
