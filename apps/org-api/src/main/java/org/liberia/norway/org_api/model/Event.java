@@ -13,7 +13,9 @@ import java.time.OffsetDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -38,6 +40,7 @@ public class Event {
     private String summary;
 
     @Column(columnDefinition = "text")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
     @Column(length=250)

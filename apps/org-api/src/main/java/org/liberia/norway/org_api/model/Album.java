@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.liberia.norway.org_api.service.FileStorageService.StoredFile;
 
 @Entity
@@ -30,9 +32,10 @@ public class Album {
     @Column(nullable = false, length = 256)
     private String title;
 
-    @Lob
+    
     @Basic(fetch = FetchType.LAZY)   // valgfritt, fint for store tekster
-    @Column(name = "description")
+    @Column(columnDefinition = "text")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
     @Column(name = "is_published", nullable = false)

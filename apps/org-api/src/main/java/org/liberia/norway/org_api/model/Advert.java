@@ -8,6 +8,9 @@ import lombok.ToString;
 import java.time.OffsetDateTime;
 import java.util.Locale;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 @Entity
 @Table(name = "adverts", indexes = {
         @Index(name = "idx_adverts_slug", columnList = "slug", unique = true),
@@ -26,8 +29,9 @@ public class Advert {
     @Column(nullable = false, length = 200)
     private String title;
 
-    @Lob
-    private String description; // CLOB i SQL
+    @jakarta.persistence.Column(columnDefinition = "text")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String description;
 
     @Column(name = "target_url", length = 512)
     private String targetUrl;

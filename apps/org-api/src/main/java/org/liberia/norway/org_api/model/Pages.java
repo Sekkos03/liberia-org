@@ -7,6 +7,9 @@ import lombok.ToString;
 
 import java.time.OffsetDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 @Entity
 @Table(name = "pages", indexes = {
         @Index(name = "idx_pages_slug", columnList = "slug", unique = true),
@@ -27,9 +30,9 @@ public class Pages {
     @Column(nullable = false, length = 200)
     private String title;
 
-    @Lob
-    @Column(nullable = false)
-    private String body; // CLOB i SQL
+    @Column(columnDefinition = "text", nullable = false)
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String body;
 
     @Column(nullable = false)
     private boolean published = false;

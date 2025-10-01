@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.OffsetDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 @Entity
 @Table(name = "suggestions")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -19,8 +22,8 @@ public class Suggestion {
     private String email;
 
     // V1 uses TEXT; on H2 this is a CLOB, so map as @Lob to avoid validation errors
-    @Lob
-    @Column(name = "message", columnDefinition = "text", nullable = false)
+    @Column(columnDefinition = "text")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String message;
 
     @Column(length = 20, nullable = false)
