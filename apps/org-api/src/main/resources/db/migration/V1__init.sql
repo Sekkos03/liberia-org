@@ -27,10 +27,14 @@ create table if not exists photos (
   updated_at    timestamp not null default now()
 );
 
--- set optional cover FK after photos exists
-alter table albums
-  add constraint if not exists fk_albums_cover
-  foreign key (cover_photo_id) references photos(id);
+DO $$
+BEGIN
+  ALTER TABLE public.albums
+    ADD CONSTRAINT fk_albums_cover
+    FOREIGN KEY (cover_photo_id) REFERENCES public.photos(id);
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 create index if not exists idx_photos_album on photos(album_id);
 create index if not exists idx_photos_published on photos(is_published);
@@ -53,13 +57,15 @@ create table if not exists events (
   updated_at       timestamp not null default now()
 );
 
--- Hvis kolonner finnes med feil type fra tidligere, forsøk å rette:
--- (H2 støtter ikke enkelt ALTER TYPE for CLOB i alle moduser; derfor forsøk "add/transfer" kun hvis nødvendig i Postgres.
--- Holdt enkelt her siden du kjører H2 i dev.)
--- Sørg for FK mot albums(id)
-alter table events
-  add constraint if not exists fk_events_album
-  foreign key (gallery_album_id) references albums(id) on delete set null;
+DO $$
+BEGIN
+  ALTER TABLE public.events
+    ADD CONSTRAINT fk_events_album
+    FOREIGN KEY (gallery_album_id) REFERENCES public.albums(id) ON DELETE SET NULL;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 
 -- Indekser
 create index if not exists idx_events_published on events(is_published);
@@ -68,10 +74,6 @@ create index if not exists idx_events_start_at on events(start_at);
 create unique index if not exists ux_events_slug on events(slug);
 
 
--- 2) (Optional but recommended) Add a foreign key constraint
-ALTER TABLE events
-  ADD CONSTRAINT fk_events_gallery_album
-  FOREIGN KEY (gallery_album_id) REFERENCES albums(id);
 
 create index if not exists idx_events_start_at on events(start_at);
 create index if not exists idx_events_published on events(is_published);
