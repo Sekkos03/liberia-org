@@ -13,10 +13,17 @@ CREATE TABLE IF NOT EXISTS album_items (
   media_type   VARCHAR(16) NOT NULL
 );
 
--- FK + indeks
-ALTER TABLE album_items
-  ADD CONSTRAINT IF NOT EXISTS fk_album_items_album
-  FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE;
+DO $$
+BEGIN
+  ALTER TABLE public.album_items
+    ADD CONSTRAINT fk_album_items_album
+    FOREIGN KEY (album_id) REFERENCES public.albums(id) ON DELETE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN
+    -- FK already exists; nothing to do
+    NULL;
+END $$;
+
 
 CREATE INDEX IF NOT EXISTS ix_album_items_album_id ON album_items(album_id);
 
