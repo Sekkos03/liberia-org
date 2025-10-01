@@ -17,7 +17,6 @@ const executives: Executive[] = [
   { id: 5, name: "EXE 5" },
   { id: 6, name: "EXE 6" },
   { id: 7, name: "EXE 7" },
-  { id: 8, name: "EXE 8" },
 ];
 
 export default function AboutUs() {
