@@ -4,7 +4,7 @@ import { normUrlPath } from "./media";
 
 /* ------------------------------- HTTP client ------------------------------- */
 export const API_BASE =
-  (import.meta.env.VITE_API_BASE as string) ?? "https://liberia-org.onrender.com";
+  import.meta.env.VITE_API_BASE_URL ?? "https://liberia-org.onrender.com";
 
 function getToken(): string | null {
   return (
