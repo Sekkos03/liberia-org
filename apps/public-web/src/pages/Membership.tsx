@@ -16,7 +16,6 @@ export default function Membership() {
     city: "",
     phone: "",
     email: "",
-    occupation: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -33,7 +32,6 @@ export default function Membership() {
     "city",
     "phone",
     "email",
-    "occupation",
   ];
 
   const update =
@@ -116,7 +114,6 @@ export default function Membership() {
 
             <Input label="Telefon Nummer" required value={form.phone} onChange={update("phone")} error={errors.phone} />
             <Input label="E-Mail" type="email" required value={form.email} onChange={update("email")} error={errors.email} />
-            <Input label="Occupation" required value={form.occupation} onChange={update("occupation")} error={errors.occupation} />
 
             <div className="pt-2 flex items-center justify-between gap-4">
               <p className="text-xs text-gray-500">Send aldri passord via dette skjemaet.</p>

@@ -12,7 +12,6 @@ export type MemberDTO = {
   city?: string;
   phone?: string;
   email?: string;
-  occupation?: string;
   createdAt?: string;
 };
 

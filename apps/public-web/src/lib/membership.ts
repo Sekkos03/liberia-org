@@ -13,7 +13,6 @@ export type MembershipForm = {
   city: string;
   phone: string;
   email: string;
-  occupation: string;
 };
 
 export async function submitMembership(payload: MembershipForm): Promise<void> {

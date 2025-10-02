@@ -117,7 +117,6 @@ function EditMemberModal({
     city: "",
     phone: "",
     email: "",
-    occupation: "",
     ...initial,
   });
   const set = (k: keyof MemberDTO) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -141,7 +140,6 @@ function EditMemberModal({
           <Field label="City" value={m.city ?? ""} onChange={set("city")} />
           <Field label="Telefon Nummer" value={m.phone ?? ""} onChange={set("phone")} />
           <Field label="E-Mail" type="email" value={m.email ?? ""} onChange={set("email")} />
-          <Field label="Occupation" value={m.occupation ?? ""} onChange={set("occupation")} />
         </div>
 
         <div className="flex items-center justify-end gap-2">
