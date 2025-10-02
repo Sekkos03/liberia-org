@@ -1,7 +1,9 @@
 // Offentlig API for innsendte medlemskapssøknader
 // Bruker samme API_BASE som resten av public-web
-export const API_BASE =
-  import.meta.env.VITE_API_BASE ?? "https://liberia-org.onrender.com";
+
+const LOCAL_API = 'http://localhost:8080';
+const PROD_API  = 'https://liberia-org.onrender.com';
+const API_BASE  = window.location.hostname === 'localhost' ? LOCAL_API : PROD_API;
 
 export type MembershipForm = {
   firstName: string;

@@ -13,29 +13,37 @@ export default function Login() {
   const nav = useNavigate();
   const loc = useLocation();
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setErr(null);
-    try {
-      const res = await fetch("https://liberia-org.onrender.com/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: u, password: p }),
-      });
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || `Login failed (${res.status})`);
-      }
-      const data: { token: string } = await res.json();
-      login(data.token);
+  // øverst i komponentfila (eller legg i en egen api.ts og importer)
+const API_BASE =
+  (import.meta as any).env?.VITE_API_BASE ??
+  ((/^(localhost|127\.0\.0\.1|::1)$/).test(window.location.hostname)
+    ? "http://localhost:8080"
+    : "https://liberia-org.onrender.com");
 
-      // go back where we came from or to events
-      const redirectTo = (loc.state as any)?.from?.pathname ?? "/dashboard";
-      nav(redirectTo, { replace: true });
-    } catch (e: any) {
-      setErr(e.message ?? "Login failed");
+async function onSubmit(e: FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  setErr(null);
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: u, password: p }),
+    });
+
+    if (!res.ok) {
+      const msg = await res.text();
+      throw new Error(msg || `Login failed (${res.status})`);
     }
+
+    const data: { token: string } = await res.json();
+    login(data.token);
+
+    const redirectTo = (loc.state as any)?.from?.pathname ?? "/dashboard";
+    nav(redirectTo, { replace: true });
+  } catch (e: any) {
+    setErr(e.message ?? "Login failed");
   }
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">

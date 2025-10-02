@@ -3,8 +3,9 @@ import axios from "axios";
 import { normUrlPath } from "./media";
 
 /* ------------------------------- HTTP client ------------------------------- */
-export const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ?? "https://liberia-org.onrender.com";
+const LOCAL_API = 'http://localhost:8080';
+const PROD_API  = 'https://liberia-org.onrender.com';
+export const API_BASE  = window.location.hostname === 'localhost' ? LOCAL_API : PROD_API;
 
 function getToken(): string | null {
   return (

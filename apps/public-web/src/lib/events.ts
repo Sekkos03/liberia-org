@@ -1,7 +1,9 @@
 
 // public-web/src/lib/events.ts
-export const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ?? "https://liberia-org.onrender.com";
+const LOCAL_API = 'http://localhost:8080';
+const PROD_API  = 'https://liberia-org.onrender.com';
+export const API_BASE  = window.location.hostname === 'localhost' ? LOCAL_API : PROD_API;
+
 
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
