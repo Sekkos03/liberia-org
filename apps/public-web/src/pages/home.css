@@ -17,7 +17,7 @@
   padding: 6rem 1rem 7rem;        /* god luft over/under */
 
   /* bakgrunnsbildet ditt */
-  background-image: url("/src/assets/Ulan_Bakgrunn.PNG");
+  background-image: url("/src/assets/ulan-bakgrunn.png");
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
