@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
-const PDF_URL = "/assets/Sekou_Kosiah_CV_2025.pdf"; // <-- Sett korrekt sti/URL her
+const PDF_URL = "/src/assets/Sekou_Kosiah_CV_2025.pdf"; // <-- Sett korrekt sti/URL her
 
 export default function Constitution() {
   return (

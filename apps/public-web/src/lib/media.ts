@@ -1,36 +1,34 @@
-// Hjelpere for å vise media riktig (tåler også verdier som "StoredFile[...]")
+import { API_BASE } from "./events";
 
-export const API_BASE = (import.meta.env.VITE_API_BASE ?? "").replace(/\/+$/, "");
-
-/** Ekstraher '/uploads/...' fra "StoredFile[... url=/uploads/xyz, ...]" */
 export function stripStoredFileToString(u?: string | null): string | undefined {
-  if (!u) return undefined;
-  const s = String(u);
-  const m = s.match(/url=([^,\]]+)/);       // plukk ut url=... fram til , eller ]
-  return m ? m[1] : s;
+  if (u == null) return undefined;
+
+  const s0 = String(u).trim();
+  if (!s0 || s0 === "null" || s0 === "undefined") return undefined;
+
+  const m = s0.match(/url=([^,\]]+)/);
+  let out = (m ? m[1] : s0).trim();
+
+  if (!out || out === "null" || out === "undefined") return undefined;
+
+  // Normaliser windows-path
+  out = out.replace(/\\/g, "/");
+
+  // Hvis vi får en absolutt path som inneholder /uploads/, klipp til den delen
+  const idx = out.indexOf("/uploads/");
+  if (idx >= 0) out = out.substring(idx);
+
+  return out;
 }
 
-/** Gjør URL nettvennlig og absolutt mot API-basen */
 export function toPublicUrl(u?: string | null): string {
   const raw = stripStoredFileToString(u);
   if (!raw) return "";
-  if (/^https?:\/\//i.test(raw)) return raw;           // allerede absolutt
+  if (/^https?:\/\//i.test(raw)) return raw;
   return raw.startsWith("/") ? `${API_BASE}${raw}` : `${API_BASE}/${raw}`;
 }
 
-/** Normaliser råverdier til en sti (beholder absolutte, ellers prefix’er med /) */
-export function normUrlPath(u?: string | null): string | undefined {
-  const s = stripStoredFileToString(u);
-  if (!s) return undefined;
-  if (/^https?:\/\//i.test(s)) return s;
-  return s.startsWith("/") ? s : `/${s}`;
-}
-
-/** Velg thumb hvis tilgjengelig, ellers original, og gjør den offentlig (absolutt) */
 export function pickImageSrc(thumbUrl?: string | null, url?: string | null) {
-  return toPublicUrl(thumbUrl || url || "");
+  // viktig: thumbUrl kan være "null" (string) -> strip... returnerer undefined -> faller tilbake på url
+  return toPublicUrl(thumbUrl) || toPublicUrl(url) || "";
 }
-
-export const isVideo = (u?: string | null) =>
-  !!stripStoredFileToString(u) &&
-  /\.(mp4|webm|ogg|mkv|mov)$/i.test(stripStoredFileToString(u)!);

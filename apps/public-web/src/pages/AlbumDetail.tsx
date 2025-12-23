@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { getPublicAlbum, type AlbumItem } from "../lib/albums";
-import { pickImageSrc, toPublicUrl } from "../lib/media";
+import { pickImageSrc, stripStoredFileToString, toPublicUrl } from "../lib/media";
+
 
 export default function AlbumDetail() {
   const { slug = "" } = useParams();
@@ -25,6 +26,8 @@ export default function AlbumDetail() {
 
   const title = q.data?.album?.eventTitle || q.data?.album?.title || "Album";
   const [lightbox, setLightbox] = useState<{ url: string; title?: string | null } | null>(null);
+
+
 
   return (
     <div className="album">
@@ -58,9 +61,26 @@ export default function AlbumDetail() {
                 <ul className="cards">
                   {images.map((it, idx) => (
                     <li key={(it.id ?? idx) + "-img"} className="card" onClick={() => setLightbox({ url: it.url, title: it.title })}>
-                      <div className="card__thumb">
-                        <img src={pickImageSrc(it.thumbUrl, it.url)} alt={it.title ?? "image"} />
-                      </div>
+                        <div className="card__thumb">
+                          {(() => {
+                            const full = toPublicUrl(stripStoredFileToString(it.url));
+                            const thumb = it.thumbUrl
+                              ? toPublicUrl(stripStoredFileToString(it.thumbUrl))
+                              : full;
+
+                            return (
+                              <img
+                                src={thumb}
+                                alt={it.title ?? "image"}
+                                loading="lazy"
+                                onError={(e) => {
+                                  // Hvis thumb feiler (404 osv.), fall tilbake til originalen.
+                                  if (e.currentTarget.src !== full) e.currentTarget.src = full;
+                                }}
+                              />
+                            );
+                          })()}
+                        </div>
                       <div className="card__body">
                         <div className="card__title">{it.title ?? " "}</div>
                         <div className="card__meta">{(q.data?.album?.title ?? "")}</div>

@@ -22,8 +22,8 @@ export default function Postbox() {
   const left = useMemo(() => Math.max(0, MAX_MSG - message.length), [message.length]);
 
   function validate(): string | null {
-    if (!message.trim()) return "Melding kan ikke være tom.";
-    if (message.length > MAX_MSG) return `Meldingen er for lang (maks ${MAX_MSG} tegn).`;
+    if (!message.trim()) return "Message cannot be empty.";
+    if (message.length > MAX_MSG) return `Message is too long (max ${MAX_MSG} characters).`;
     if (email.trim()) {
       // enkel epost-sjekk
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
@@ -31,7 +31,7 @@ export default function Postbox() {
     }
     if (hpRef.current?.value) {
       // Skjult felt fylt ut → sannsynlig bot
-      return "Kunne ikke sende forslaget.";
+      return "Could not send the message.";
     }
     return null;
   }
@@ -56,7 +56,7 @@ export default function Postbox() {
       setEmail("");
       setMessage("");
     } catch (err: any) {
-      setError(err?.message ?? "Noe gikk galt. Prøv igjen.");
+      setError(err?.message ?? "Something went wrong. Try again.");
     } finally {
       setBusy(false);
     }
@@ -71,7 +71,7 @@ export default function Postbox() {
         <section className="pbHero" aria-labelledby="pbTitle">
           <div className="pbHero__banner">
             <h1 id="pbTitle" className="pbHero__title">Postbox</h1>
-            <p className="pbHero__tag">Har du et forslag? Si ifra – anonymt om du vil.</p>
+            <p className="pbHero__tag">Do you have a suggestion? Let us know anonymously if you want.</p>
           </div>
         </section>
 
@@ -79,21 +79,21 @@ export default function Postbox() {
         <section className="pbGrid">
           {/* Info */}
           <aside className="pbInfo" aria-label="Om postboxen">
-            <h2 className="pbInfo__title">Slik fungerer det</h2>
+            <h2 className="pbInfo__title">How it works</h2>
             <ul className="pbInfo__list">
-              <li>Forslag kan sendes med eller uten navn og e-post.</li>
-              <li>Vi leser alt og følger opp innspill som krever handling.</li>
-              <li>Vil du ha svar? Legg ved e-post – ellers forblir du anonym.</li>
+              <li>Suggestions can be submitted with or without your name and email.</li>
+              <li>We read everything and follow up on input that requires action.</li>
+              <li>Want a response? Include your email – otherwise you remain anonymous.</li>
             </ul>
 
-            <h3 className="pbInfo__subtitle">Personvern</h3>
+            <h3 className="pbInfo__subtitle">Privacy</h3>
             <p className="pbInfo__text">
-              Vi lagrer meldingen din sikkert og deler den kun internt ved behov. Les mer i våre
-              retningslinjer eller ta kontakt om du har spørsmål.
+              We store your message securely and share it only internally when necessary.
+              Read more in our guidelines or get in touch if you have questions.
             </p>
 
             <div className="pbInfo__hint">
-              Tips: Jo mer konkret du er, desto lettere kan vi følge opp.
+              Tip: The more specific you are, the easier it is for us to follow up.
             </div>
           </aside>
 
@@ -101,7 +101,7 @@ export default function Postbox() {
           <div className="pbFormCard">
             {sent && (
               <div className="pbAlert pbAlert--ok" role="status" aria-live="polite">
-                <span className="pbAlert__title">Takk!</span> Forslaget er sendt. 💌
+                <span className="pbAlert__title">Thank you!</span> Your message has been sent!. 💌
               </div>
             )}
             {error && (
@@ -124,11 +124,11 @@ export default function Postbox() {
 
               <div className="pbRow">
                 <label className="pbField">
-                  <span className="pbLabel">Navn (valgfritt)</span>
+                  <span className="pbLabel">Name (optional)</span>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ditt navn"
+                    placeholder="Your name"
                     className="pbInput"
                     autoComplete="name"
                     maxLength={140}
@@ -136,12 +136,12 @@ export default function Postbox() {
                 </label>
 
                 <label className="pbField">
-                  <span className="pbLabel">E-post (valgfritt)</span>
+                  <span className="pbLabel">Email (optional)</span>
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     type="email"
-                    placeholder="din@epost.no"
+                    placeholder="your@email.com"
                     className="pbInput"
                     autoComplete="email"
                     maxLength={140}
@@ -151,25 +151,25 @@ export default function Postbox() {
 
               <label className="pbField">
                 <span className="pbLabel">
-                  Melding <span className="pbReq">*</span>
+                  Message <span className="pbReq">*</span>
                 </span>
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={8}
                   className="pbTextarea"
-                  placeholder="Skriv forslaget ditt her…"
+                  placeholder="Write your message here…"
                   required
                   maxLength={MAX_MSG}
                 />
                 <div className="pbHelp">
-                  <span className={left < 100 ? "warn" : ""}>{left} tegn igjen</span>
+                  <span className={left < 100 ? "warn" : ""}>{left} characters remaining</span>
                 </div>
               </label>
 
               <div className="pbActions">
                 <button type="submit" className="pbBtn pbBtn--primary" disabled={busy}>
-                  {busy ? "Sender…" : "Send inn"}
+                  {busy ? "Sending…" : "Send message"}
                 </button>
                 <button
                   type="button"
@@ -179,14 +179,14 @@ export default function Postbox() {
                   }}
                   disabled={busy}
                 >
-                  Tøm
+                  Clear
                 </button>
               </div>
             </form>
 
             <p className="pbFootnote">
-              Vi lagrer forslaget ditt og går gjennom det så snart som mulig. Personopplysninger er
-              valgfrie—legg dem bare ved hvis du ønsker svar.
+              We save your message and review it as soon as possible. Personal information is
+              optional—add it if you want a response.
             </p>
           </div>
         </section>

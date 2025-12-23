@@ -41,16 +41,9 @@ export default function AboutUs() {
         {/* TEKSTBLOKK */}
         <section className="aboutText">
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum quis porta neque.
-            Quisque turpis erat, semper sodales posuere eget, sollicitudin ut lorem. Aenean ac libero
-            nunc. Aenean iaculis condimentum velit ac fringilla. Lorem ipsum dolor sit amet,
-            consectetur adipiscing elit. Donec varius diam elit, ut condimentum urna dictum et. Donec
-            aliquam massa id odio lacinia fermentum. Vivamus urna enim, fringilla elit iaculis at,
-            condimentum fringilla lectus. Sed sollicitudin bibendum tortor. Aenean ipsum tellus, viverra
-            at egestas et, accumsan nec eros. Cras magna enim, rhoncus eu bibendum laoreet, lacinia et
-            risus. Mauris interdum sem vel viverra aliquet. Donec ut massa vulputate, convallis enim
-            aliquam, dapibus tellus. Nullam vehicula blandit dui at faucibus. Aliquam tristique pharetra
-            bibendum.
+            ULAN is a non governmental organization basing in Norway that carries out charitable socioeconomic developments in Liberia through five thematic areas; 
+            Health, Education, Agriculture, Microfinance, and Emergency Relief in Liberia ( commonly known as the HEAMER PROJECTS). 
+            The nonprofit charitable organization, which is run by Liberians residing in the Kingdom of norway and Liberia respectively was established in 2005 in the Norwegian city of Kongsberg.
           </p>
         </section>
 
