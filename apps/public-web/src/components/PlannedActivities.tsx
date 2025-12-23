@@ -63,8 +63,8 @@ export default function PlannedActivities() {
           Planned Activities
         </h2>
 
-        {loading && <p className="mt-6 text-gray-500">Laster …</p>}
-        {err && <p className="mt-6 text-red-600">Feil: {err}</p>}
+        {loading && <p className="mt-6 text-gray-500">Loading…</p>}
+        {err && <p className="mt-6 text-red-600">Error: {err}</p>}
 
         {!loading && !err && (
           <>
@@ -73,14 +73,14 @@ export default function PlannedActivities() {
               <FeaturedCard e={next} />
             ) : (
               <div className="mt-6 p-6 border rounded-xl bg-white shadow-sm">
-                <p className="text-gray-600">Ingen kommende eventer er planlagt.</p>
+                <p className="text-gray-600">No upcoming events are planned.</p>
               </div>
             )}
 
             {/* Kommende (flere) */}
             {upcoming.length > 0 && (
               <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Kommer</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Coming soon</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {upcoming.map(e => (
                     <SmallCard key={e.id} e={e} />
@@ -91,9 +91,9 @@ export default function PlannedActivities() {
 
             {/* Tidligere – tidslinje */}
             <div className="mt-10">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Tidligere</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Previous</h3>
               {past.length === 0 ? (
-                <p className="text-gray-500">Ingen tidligere eventer.</p>
+                <p className="text-gray-500">No previous events.</p>
               ) : (
                 <ul className="relative border-l pl-5 space-y-5">
                   {past.slice(0, 6).map(e => (
@@ -125,7 +125,7 @@ export default function PlannedActivities() {
               <Link
                 to="/events/calendar"
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#16254a] text-white shadow-lg hover:shadow-xl transition-transform duration-150 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#16254a]"
-                aria-label="Åpne kalender"
+                aria-label="Open calendar"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                   <path
@@ -133,7 +133,7 @@ export default function PlannedActivities() {
                     fill="currentColor"
                   />
                 </svg>
-                Åpne kalender
+                Open calendar
               </Link>
             </div>
           </>
@@ -169,7 +169,7 @@ function FeaturedCard({ e }: { e: EventDto }) {
       {/* Info */}
       <div className="md:col-span-3 flex flex-col">
         <span className="inline-flex items-center gap-2 text-xs font-semibold text-[#1f2a44] bg-[#eaf1ff] px-3 py-1 rounded-full w-fit">
-          Neste event
+          Next event
         </span>
 
         <h3 className="mt-3 text-2xl md:text-3xl font-extrabold text-[#0f172a] leading-tight">
@@ -189,7 +189,7 @@ function FeaturedCard({ e }: { e: EventDto }) {
 
         <div className="mt-auto pt-4">
           <span className="inline-flex items-center text-[#1f2a44] font-medium">
-            Finn ut mer <span className="ml-1">›</span>
+            Find out more <span className="ml-1">›</span>
           </span>
         </div>
       </div>

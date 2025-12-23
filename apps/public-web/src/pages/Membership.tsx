@@ -48,8 +48,8 @@ export default function Membership() {
 
   function validate(): boolean {
     const e: Record<string, string> = {};
-    for (const k of required) if (!(form[k] ?? "").trim()) e[k] = "Påkrevd";
-    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Ugyldig e-post";
+    for (const k of required) if (!(form[k] ?? "").trim()) e[k] = "Necessary field";
+    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Invalid email";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -64,7 +64,7 @@ export default function Membership() {
       await submitMembership(form);
       setDone(true);
     } catch (e: any) {
-      setErr(e?.message ?? "Noe gikk galt");
+      setErr(e?.message ?? "Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -92,9 +92,9 @@ export default function Membership() {
           <div className="h-2 bg-[#122346]" />
           <div className="p-6 md:p-8 border-b border-gray-100">
             <p className="text-sm text-gray-600">
-              <span className="font-semibold">*</span> indikerer at feltet er påkrevd
+              <span className="font-semibold">*</span> indicates that the field is required
             </p>
-            {err && <div className="mt-3 text-red-600">Feil: {err}</div>}
+            {err && <div className="mt-3 text-red-600">Error: {err}</div>}
           </div>
 
           <form className="p-6 md:p-8 space-y-5" onSubmit={onSubmit} noValidate>
@@ -104,7 +104,7 @@ export default function Membership() {
             </div>
 
             <Input label="Date of Birth" type="date" required value={form.dateOfBirth} onChange={update("dateOfBirth")} error={errors.dateOfBirth} />
-            <Input label="Personal-Nr" required value={form.personalNr} onChange={update("personalNr")} error={errors.personalNr} />
+            <Input label="Personal Number" required value={form.personalNr} onChange={update("personalNr")} error={errors.personalNr} />
             <Input label="Address" required value={form.address} onChange={update("address")} error={errors.address} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -112,11 +112,11 @@ export default function Membership() {
               <Input label="City" required value={form.city} onChange={update("city")} error={errors.city} />
             </div>
 
-            <Input label="Telefon Nummer" required value={form.phone} onChange={update("phone")} error={errors.phone} />
+            <Input label="Telefon Number" required value={form.phone} onChange={update("phone")} error={errors.phone} />
             <Input label="E-Mail" type="email" required value={form.email} onChange={update("email")} error={errors.email} />
 
             <div className="pt-2 flex items-center justify-between gap-4">
-              <p className="text-xs text-gray-500">Send aldri passord via dette skjemaet.</p>
+              <p className="text-xs text-gray-500">Never send passwords via this form.</p>
               <button
                 type="submit"
                 disabled={saving}
@@ -131,7 +131,7 @@ export default function Membership() {
               <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
                 <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
               </div>
-              <div className="text-[11px] text-gray-500 mt-1">Side 1 av 1</div>
+              <div className="text-[11px] text-gray-500 mt-1">Page 1 of 1</div>
             </div>
           </form>
         </div>

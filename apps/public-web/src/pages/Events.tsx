@@ -27,12 +27,12 @@ export default function Events() {
     queryFn: () => apiGet<EventDto[]>("/api/events"),
   });
 
-  if (q.isLoading) return <div className="max-w-6xl mx-auto px-4 py-16">Laster…</div>;
+  if (q.isLoading) return <div className="max-w-6xl mx-auto px-4 py-16">Loading…</div>;
   if (q.isError) {
-    const msg = (q.error as Error)?.message ?? "Ukjent feil";
+    const msg = (q.error as Error)?.message ?? "Unknown error";
     return (
       <div className="max-w-6xl mx-auto px-4 py-16 text-red-500">
-        Feil: {msg}
+        Error: {msg}
       </div>
     );
   }
@@ -70,7 +70,7 @@ export default function Events() {
         <section className="max-w-3xl mx-auto px-4 mt-8">
           <div className="rounded-xl shadow-lg overflow-hidden border border-[#0f1b3a] bg-[#16254a] text-white">
             <div className="px-6 pt-6 text-center">
-              <h2 className="text-xl font-bold">Next Upcoming Event</h2>
+              <h2 className="text-xl font-bold">Next upcoming event</h2>
               {next ? (
                 <>
                   <p className="mt-2 text-[13px] tracking-wide opacity-90">
@@ -95,7 +95,7 @@ export default function Events() {
                   </div>
                 </>
               ) : (
-                <p className="py-8 opacity-80">Ingen kommende arrangement.</p>
+                <p className="py-8 opacity-80">No upcoming events.</p>
               )}
             </div>
           </div>

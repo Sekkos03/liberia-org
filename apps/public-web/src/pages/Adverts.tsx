@@ -54,7 +54,7 @@ export default function Adverts() {
           <div className="hero__frame">
             <button
               className="hero__ctrl"
-              aria-label="Forrige"
+              aria-label="Previous"
               onClick={() =>
                 setIdx((v) => (v - 1 + Math.max(items.length, 1)) % Math.max(items.length, 1))
               }
@@ -64,16 +64,16 @@ export default function Adverts() {
             </button>
 
             <div className="hero__stage">
-              {q.isLoading && <div className="hero__empty">Laster…</div>}
+              {q.isLoading && <div className="hero__empty">Loading…</div>}
 
               {!q.isLoading && q.isError && (
                 <div className="hero__error" role="alert">
-                  Feil: {(q.error as Error)?.message ?? "Failed to fetch"}
+                  Error: {(q.error as Error)?.message ?? "Failed to fetch"}
                 </div>
               )}
 
               {!q.isLoading && !q.isError && !items.length && (
-                <div className="hero__empty">Ingen annonser publisert enda.</div>
+                <div className="hero__empty">No adverts published yet.</div>
               )}
 
               {!q.isLoading && !q.isError && current && <Slide key={String(current.id)} item={current} />}
@@ -81,7 +81,7 @@ export default function Adverts() {
 
             <button
               className="hero__ctrl"
-              aria-label="Neste"
+              aria-label="Next"
               onClick={() => setIdx((v) => (v + 1) % Math.max(items.length, 1))}
               disabled={!items.length}
             >
@@ -93,7 +93,7 @@ export default function Adverts() {
             {items.map((_, i) => (
               <button
                 key={i}
-                aria-label={`Gå til annonse ${i + 1}`}
+                aria-label={`Go to advert ${i + 1}`}
                 onClick={() => setIdx(i)}
                 className={`dot ${i === idx ? "dot--active" : ""}`}
               />
@@ -107,11 +107,11 @@ export default function Adverts() {
         <section className="lists">
           <div className="listCol">
             <header className="listCol__head">
-              <h2>Bildeannonser</h2>
+              <h2>Image Adverts</h2>
               <span className="listCol__count">{images.length}</span>
             </header>
             {images.length === 0 ? (
-              <p className="muted">Ingen bilder publisert.</p>
+              <p className="muted">No images published.</p>
             ) : (
               <div className="cards">{images.map((a) => <Card key={String(a.id)} item={a} />)}</div>
             )}
@@ -119,11 +119,11 @@ export default function Adverts() {
 
           <div className="listCol">
             <header className="listCol__head">
-              <h2>Videoannonser</h2>
+              <h2>Video Adverts</h2>
               <span className="listCol__count">{videos.length}</span>
             </header>
             {videos.length === 0 ? (
-              <p className="muted">Ingen videoer publisert.</p>
+              <p className="muted">No videos published.</p>
             ) : (
               <div className="cards">{videos.map((a) => <Card key={String(a.id)} item={a} />)}</div>
             )}
@@ -183,7 +183,7 @@ function Card({ item }: { item: Advert }) {
       {open && (
         <div className="lightbox" onClick={() => setOpen(false)}>
           <div className="lightbox__inner" onClick={(e) => e.stopPropagation()}>
-            <button className="lightbox__close" onClick={() => setOpen(false)} aria-label="Lukk">✕</button>
+            <button className="lightbox__close" onClick={() => setOpen(false)} aria-label="Close">✕</button>
             {isVideo ? (
               <video src={toPublicUrl(item.mediaUrl)} poster={toPublicUrl(item.posterUrl)} controls autoPlay />
             ) : (

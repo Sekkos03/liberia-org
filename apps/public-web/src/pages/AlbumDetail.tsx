@@ -37,8 +37,8 @@ export default function AlbumDetail() {
         <section className="hero" aria-label="Album hero">
           <div className="hero__frame">
             <div className="hero__stage">
-              {q.isError && <div className="hero__error">Feil: {(q.error as Error)?.message || "ukjent feil"}</div>}
-              {q.isLoading && <div className="hero__empty">Laster album…</div>}
+              {q.isError && <div className="hero__error">Wrong: {(q.error as Error)?.message || "Unknown error"}</div>}
+              {q.isLoading && <div className="hero__empty">Loading album…</div>}
               {!q.isLoading && !q.isError && (
                 <div className="hero__title">{title}</div>
               )}
@@ -52,11 +52,11 @@ export default function AlbumDetail() {
             {/* BILDER */}
             <div className="listCol">
               <div className="listCol__head">
-                <h2>Bilder</h2>
+                <h2>Photos</h2>
                 <span className="listCol__count">{images.length}</span>
               </div>
               {images.length === 0 ? (
-                <p className="muted">Ingen bilder publisert.</p>
+                <p className="muted">No images published.</p>
               ) : (
                 <ul className="cards">
                   {images.map((it, idx) => (
@@ -94,11 +94,11 @@ export default function AlbumDetail() {
             {/* VIDEOER */}
             <div className="listCol">
               <div className="listCol__head">
-                <h2>Videoer</h2>
+                <h2>Videos</h2>
                 <span className="listCol__count">{videos.length}</span>
               </div>
               {videos.length === 0 ? (
-                <p className="muted">Ingen videoer publisert.</p>
+                <p className="muted">No videos published.</p>
               ) : (
                 <ul className="cards">
                   {videos.map((it, idx) => (
@@ -123,7 +123,7 @@ export default function AlbumDetail() {
       {lightbox && (
         <div className="lightbox" onClick={() => setLightbox(null)}>
           <div className="lightbox__inner" onClick={(e) => e.stopPropagation()}>
-            <button className="lightbox__close" onClick={() => setLightbox(null)} aria-label="Lukk">✕</button>
+            <button className="lightbox__close" onClick={() => setLightbox(null)} aria-label="Close">✕</button>
             {/\.(mp4|webm|ogg|mkv|mov)$/i.test(lightbox.url) ? (
               <video src={toPublicUrl(lightbox.url)} controls autoPlay />
             ) : (
