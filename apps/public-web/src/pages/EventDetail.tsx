@@ -29,10 +29,12 @@ export default function EventDetail() {
       <Navbar />
       <main className="flex-1">
         <article className="max-w-5xl mx-auto px-4 pt-6 pb-24">
-          {e.coverImageUrl && (
+          {e.coverImageUrl ? (
             <div className="rounded-xl overflow-hidden shadow mb-6">
               <img src={toPublicUrl(e.coverImageUrl)} alt={e.title} className="w-full h-80 object-cover" />
             </div>
+          ) : (
+            <div className="rounded-xl overflow-hidden shadow mb-6 h-80 bg-gradient-to-br from-[#0f1e3d] to-[#213b6b]" />
           )}
           <h1 className="text-3xl font-bold">{e.title}</h1>
           <p className="text-gray-600 mt-1">

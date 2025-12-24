@@ -1,3 +1,4 @@
+// admin-web/src/lib/advert.ts
 import { http, type Page } from "./events";
 import { normUrlPath } from "./media";
 
@@ -13,7 +14,7 @@ export type AdvertDTO = {
   videoUrl?: string | null;
   startAt?: string | null; // ISO
   endAt?: string | null;   // ISO
-  active: boolean;         // aktiv/publisert
+  active: boolean;
   createdAt?: string | null;
   updatedAt?: string | null;
 };
@@ -21,55 +22,86 @@ export type AdvertDTO = {
 export type AdvertUpsert = {
   title: string;
   targetUrl?: string;
-  startAt?: string;        // ISO
-  endAt?: string;          // ISO
+  startAt?: string;
+  endAt?: string;
   imageFile?: File | null;
   videoFile?: File | null;
 };
 
-/* -------------------------------- Helpers --------------------------------- */
 const videoExt = /\.(mp4|webm|ogg|mkv|mov)$/i;
 
+/**
+ * Når API svarer med `mediaUrl: null`, men gir oss `mediaKind`/`contentType`,
+ * kan vi fortsatt rendere ved å bruke public endpoint basert på id.
+ *
+ * Hvis dine endpoints heter noe annet, endre kun funksjonen under.
+ */
+function fallbackMediaPathById(id: number, kind: "IMAGE" | "VIDEO"): string {
+  return kind === "VIDEO" ? `/api/adverts/${id}/video` : `/api/adverts/${id}/image`;
+}
+
+function coerceAdvertPath(v: any): string | null {
+  const s = normUrlPath(v);
+  if (!s) return null;
+
+  // "/fil.jpg" uten mapper -> anta adverts-folder
+  if (/^\/[^^/]+$/.test(s) && !s.startsWith("/uploads/") && !s.startsWith("/files/") && !s.startsWith("/api/")) {
+    return `/uploads/adverts/${s.slice(1)}`;
+  }
+  return s;
+}
+
+function inferKind(a: any, candidate: string | null): "IMAGE" | "VIDEO" {
+  const k = String(a?.mediaKind ?? a?.mediaType ?? a?.media_kind ?? a?.media_type ?? "").toUpperCase();
+  if (k === "VIDEO") return "VIDEO";
+  if (k === "IMAGE") return "IMAGE";
+
+  const ct = String(a?.contentType ?? a?.content_type ?? "").toLowerCase();
+  if (ct.startsWith("video/")) return "VIDEO";
+  if (ct.startsWith("image/")) return "IMAGE";
+
+  if (videoExt.test(candidate ?? "")) return "VIDEO";
+  return "IMAGE";
+}
+
 function normalizeAdvert(a: any): AdvertDTO {
-  const id = Number(a?.id ?? a?.advertId);
+  const id = Number(a?.id ?? a?.advertId ?? a?.advert_id);
 
-  // Kan komme som imageUrl/mediaUrl/url/path/filename – og noen ganger som StoredFile[...]
-  const fromFileName = a?.fileName ? `/uploads/adverts/${String(a.fileName)}` : undefined;
+  const fileName = a?.fileName ?? a?.file_name ?? a?.filename ?? a?.file ?? null;
+  const fromFileName = fileName ? `/uploads/adverts/${String(fileName)}` : undefined;
 
+  // Prøv å finne sti i data (noen miljøer sender dette)
   const candidate =
-    normUrlPath(a?.mediaUrl) ??
-    normUrlPath(a?.imageUrl) ??
-    normUrlPath(a?.videoUrl) ??
-    normUrlPath(a?.url) ??
-    normUrlPath(fromFileName) ??
-    normUrlPath(a?.path) ??
+    coerceAdvertPath(a?.mediaUrl ?? a?.media_url ?? a?.media) ??
+    coerceAdvertPath(a?.imageUrl ?? a?.image_url ?? a?.image) ??
+    coerceAdvertPath(a?.videoUrl ?? a?.video_url ?? a?.video) ??
+    coerceAdvertPath(a?.url) ??
+    coerceAdvertPath(fromFileName) ??
+    coerceAdvertPath(a?.path) ??
     null;
 
-  const ct = String(a?.contentType ?? "").toLowerCase();
-  const looksVideo = ct.startsWith("video/") || videoExt.test(candidate ?? "") || !!a?.videoUrl;
+  const kind = inferKind(a, candidate);
 
-  const imageUrl = looksVideo
-    ? normUrlPath(a?.imageUrl) ?? null
-    : (normUrlPath(a?.imageUrl) ?? candidate ?? null);
+  // Hvis ingen sti ble sendt -> bruk public fallback-endpoint basert på id
+  const fallback = fallbackMediaPathById(id, kind);
 
-  const videoUrl = looksVideo
-    ? (normUrlPath(a?.videoUrl) ?? candidate ?? null)
-    : (normUrlPath(a?.videoUrl) ?? null);
+  const imageUrl = kind === "IMAGE" ? (candidate ?? fallback) : (coerceAdvertPath(a?.imageUrl ?? a?.image_url ?? a?.image) ?? null);
+  const videoUrl = kind === "VIDEO" ? (candidate ?? fallback) : (coerceAdvertPath(a?.videoUrl ?? a?.video_url ?? a?.video) ?? null);
 
   return {
     id,
     slug: a?.slug ?? String(id || ""),
     title: a?.title ?? a?.name ?? "Advert",
     description: a?.description ?? null,
-    targetUrl: a?.targetUrl ?? a?.link ?? null,
+    targetUrl: a?.targetUrl ?? a?.target_url ?? a?.link ?? null,
     placement: a?.placement ?? a?.slot ?? a?.position,
     imageUrl,
     videoUrl,
     startAt: a?.startAt ?? a?.startsAt ?? null,
     endAt: a?.endAt ?? a?.endsAt ?? null,
     active: Boolean(a?.active ?? a?.isActive ?? a?.published ?? a?.isPublished ?? false),
-    createdAt: a?.createdAt ?? null,
-    updatedAt: a?.updatedAt ?? null,
+    createdAt: a?.createdAt ?? a?.created_at ?? null,
+    updatedAt: a?.updatedAt ?? a?.updated_at ?? null,
   };
 }
 
@@ -81,25 +113,19 @@ export async function listAdminAdverts(page = 0, size = 50): Promise<Page<Advert
     return { ...p, content: p.content.map(normalizeAdvert) };
   }
   const rows = (Array.isArray(res.data) ? res.data : []) as any[];
-  return {
-    content: rows.map(normalizeAdvert),
-    number: 0,
-    size: rows.length,
-    totalElements: rows.length,
-    totalPages: 1,
-  };
+  return { content: rows.map(normalizeAdvert), number: 0, size: rows.length, totalElements: rows.length, totalPages: 1 };
 }
 
 export async function createAdvert(body: AdvertUpsert): Promise<AdvertDTO> {
-  // 1) Opprett metadata
-  const created = (await http.post("/api/admin/adverts", {
+  const res = await http.post("/api/admin/adverts", {
     title: body.title,
     targetUrl: body.targetUrl ?? null,
     startAt: body.startAt ?? null,
     endAt: body.endAt ?? null,
-  })).data;
+  });
 
-  // 2) Last opp filer (om satt)
+  const created = normalizeAdvert(res.data);
+
   if (body.imageFile) {
     const fd = new FormData();
     fd.append("file", body.imageFile);
@@ -107,6 +133,7 @@ export async function createAdvert(body: AdvertUpsert): Promise<AdvertDTO> {
       headers: { "Content-Type": "multipart/form-data" },
     });
   }
+
   if (body.videoFile) {
     const fd = new FormData();
     fd.append("file", body.videoFile);
@@ -134,6 +161,7 @@ export async function updateAdvert(id: number, body: AdvertUpsert): Promise<Adve
       headers: { "Content-Type": "multipart/form-data" },
     });
   }
+
   if (body.videoFile) {
     const fd = new FormData();
     fd.append("file", body.videoFile);
@@ -162,11 +190,5 @@ export async function listPublicAdverts(page = 0, size = 20): Promise<Page<Adver
     return { ...p, content: p.content.map(normalizeAdvert) };
   }
   const rows = (Array.isArray(res.data) ? res.data : []) as any[];
-  return {
-    content: rows.map(normalizeAdvert),
-    number: 0,
-    size: rows.length,
-    totalElements: rows.length,
-    totalPages: 1,
-  };
+  return { content: rows.map(normalizeAdvert), number: 0, size: rows.length, totalElements: rows.length, totalPages: 1 };
 }

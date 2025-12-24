@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type JSX } from "react";
 import { Link } from "react-router-dom";
 import { API_BASE } from "../lib/events";
 
@@ -146,7 +146,7 @@ export default function PlannedActivities() {
 /* ------------ Sub-komponenter ------------ */
 
 function FeaturedCard({ e }: { e: EventDto }) {
-  const d = new Date(e.startAt);
+  const cover = coverSrc(e);
   return (
     <Link
       to={`/events/${e.slug}`}
@@ -157,8 +157,8 @@ function FeaturedCard({ e }: { e: EventDto }) {
         <div
           className="h-48 md:h-full rounded-xl overflow-hidden bg-gradient-to-br from-[#0f1e3d] to-[#213b6b]"
           style={{
-            backgroundImage: e.coverImageUrl
-              ? `linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url('${e.coverImageUrl}')`
+            backgroundImage: cover
+              ? `linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url('${cover}')`
               : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center",
@@ -179,39 +179,49 @@ function FeaturedCard({ e }: { e: EventDto }) {
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-700">
           <DatePill iso={e.startAt} />
           {e.location && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100">
-              📍 {e.location}
+            <span className="inline-flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full">
+              <span className="text-red-500">📍</span> {e.location}
             </span>
           )}
         </div>
 
-        {e.summary && <p className="mt-3 text-gray-600">{e.summary}</p>}
+        {e.summary && <p className="mt-4 text-gray-600">{e.summary}</p>}
 
-        <div className="mt-auto pt-4">
-          <span className="inline-flex items-center text-[#1f2a44] font-medium">
-            Find out more <span className="ml-1">›</span>
-          </span>
+        <span className="mt-auto pt-6 font-semibold text-[#0f172a]">
+          Find out more <span aria-hidden>›</span>
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function SmallCard({ e }: { e: EventDto }): JSX.Element {
+  const cover = coverSrc(e);
+  return (
+    <Link
+      to={`/events/${e.slug}`}
+      className="group rounded-xl border bg-white overflow-hidden hover:shadow-md transition flex flex-col"
+    >
+      <div
+        className="h-28 bg-gradient-to-br from-[#0f1e3d] to-[#213b6b]"
+        style={{
+          backgroundImage: cover ? `url('${cover}')` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+      <div className="p-4 flex flex-col gap-2">
+        <DatePill iso={e.startAt} />
+        <div className="font-semibold text-[#0f172a] group-hover:underline">{e.title}</div>
+        <div className="text-sm text-gray-600">
+          {formatTime(e.startAt)}
+          {e.location ? ` · ${e.location}` : ""}
         </div>
       </div>
     </Link>
   );
 }
 
-function SmallCard({ e }: { e: EventDto }) {
-  return (
-    <Link
-      to={`/events/${e.slug}`}
-      className="group rounded-xl border bg-white p-4 hover:shadow-md transition flex flex-col gap-3"
-    >
-      <DatePill iso={e.startAt} />
-      <div className="font-semibold text-[#0f172a] group-hover:underline">{e.title}</div>
-      <div className="text-sm text-gray-600">
-        {formatTime(e.startAt)}
-        {e.location ? ` · ${e.location}` : ""}
-      </div>
-    </Link>
-  );
-}
 
 function DatePill({ iso }: { iso: string }) {
   const d = new Date(iso);
@@ -239,3 +249,7 @@ function formatTime(iso: string) {
     minute: "2-digit",
   });
 }
+function coverSrc(e: EventDto): string | null {
+  return e.coverImageUrl ?? null;
+}
+

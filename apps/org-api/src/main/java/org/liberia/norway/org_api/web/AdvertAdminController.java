@@ -1,30 +1,45 @@
 package org.liberia.norway.org_api.web;
 
-import lombok.RequiredArgsConstructor;
-import org.liberia.norway.org_api.model.Advert;
-import org.liberia.norway.org_api.model.Album;
-import org.liberia.norway.org_api.repository.AdvertRepository;
-import org.liberia.norway.org_api.web.dto.AdvertDto;
-import org.liberia.norway.org_api.web.dto.AdvertMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
-
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
+import java.util.UUID;
 
-import static org.springframework.http.HttpStatus.*;
+import org.liberia.norway.org_api.model.Advert;
+import org.liberia.norway.org_api.repository.AdvertRepository;
+import org.liberia.norway.org_api.web.dto.AdvertDto;
+import org.liberia.norway.org_api.web.dto.AdvertMapper;
+import org.springframework.context.ApplicationContext;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
+import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Admin-API for annonser. Tilpasset slik at eksisterende FileStorageService kan brukes uendret.
@@ -204,20 +219,21 @@ public void setActive(
         // Finn en bean som heter/er FileStorageService (uansett pakke)
         Object storageBean = findAnyFileStorageServiceBean();
         if (storageBean == null) {
-            // Ingen tjeneste tilgjengelig – la felt være tomme; imageUrl kan være satt via request
-            return new Stored(null, file.getOriginalFilename(), safe(file.getContentType()), file.getSize(), null);
+            // Ingen FileStorageService bean funnet – lagre lokalt under uploads/adverts
+            return storeLocally(file);
         }
 
         // Finn en "store"-metode med én MultipartFile-parameter
         Method storeMethod = findStoreMethod(storageBean.getClass());
         if (storeMethod == null) {
-            // Tjenesten finnes, men vi fant ikke metoden – returner i det minste metadata
-            return new Stored(null, file.getOriginalFilename(), safe(file.getContentType()), file.getSize(), null);
+            // Tjenesten finnes, men vi fant ikke store-metoden – lagre lokalt under uploads/adverts
+            return storeLocally(file);
         }
 
         Object result = storeMethod.invoke(storageBean, file);
         if (result == null) {
-            return new Stored(null, file.getOriginalFilename(), safe(file.getContentType()), file.getSize(), null);
+            // Lagring returnerte null – lagre lokalt under uploads/adverts
+            return storeLocally(file);
         }
 
         // Prøv å lese verdier fra result-objektet (record/POJO/String)
@@ -311,6 +327,53 @@ public void setActive(
             } catch (Throwable ignore) { }
         }
         return null;
+    }
+
+
+    // ---------------------------------------------------------------------------
+    //  Lokal lagring (fallback) – brukes når FileStorageService ikke finnes.
+    //  Skriver fil til ./uploads/adverts og returnerer publicUrl under /uploads/adverts/<fil>
+    // ---------------------------------------------------------------------------
+    private Stored storeLocally(MultipartFile file) {
+        try {
+            String original = safe(file.getOriginalFilename());
+            String ct = safe(file.getContentType());
+            String ext = extensionFrom(original, ct);
+            String storedName = UUID.randomUUID().toString().replace("-", "") + ext;
+
+            Path dir = Paths.get("uploads", "adverts");
+            Files.createDirectories(dir);
+            Path target = dir.resolve(storedName);
+
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+            String publicUrl = "/uploads/adverts/" + storedName;
+            return new Stored(storedName, original, ct, file.getSize(), publicUrl);
+        } catch (IOException e) {
+            // Hvis vi ikke kan lagre, returner metadata uten filnavn/url
+            return new Stored(null, safe(file.getOriginalFilename()), safe(file.getContentType()), file.getSize(), null);
+        }
+    }
+
+    private static String extensionFrom(String originalName, String contentType) {
+        // 1) prøv original filendelse
+        if (StringUtils.hasText(originalName) && originalName.contains(".")) {
+            String ext = originalName.substring(originalName.lastIndexOf(".")).toLowerCase(Locale.ROOT);
+            if (ext.length() <= 10) return ext;
+        }
+        // 2) fallback på contentType
+        if (!StringUtils.hasText(contentType)) return "";
+        String ct = contentType.toLowerCase(Locale.ROOT);
+        if (ct.contains("jpeg")) return ".jpg";
+        if (ct.contains("png")) return ".png";
+        if (ct.contains("gif")) return ".gif";
+        if (ct.contains("webp")) return ".webp";
+        if (ct.contains("mp4")) return ".mp4";
+        if (ct.contains("webm")) return ".webm";
+        if (ct.contains("ogg")) return ".ogg";
+        if (ct.contains("mov")) return ".mov";
+        if (ct.contains("mkv")) return ".mkv";
+        return "";
     }
 
     private static String buildDefaultPublicUrl(String storedName) {

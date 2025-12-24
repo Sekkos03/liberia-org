@@ -6,6 +6,7 @@ import org.liberia.norway.org_api.repository.AlbumRepository;
 import org.liberia.norway.org_api.repository.EventRepository;
 import org.liberia.norway.org_api.service.FileStorageService;
 import org.liberia.norway.org_api.service.FileStorageService.StoredFile;
+import org.liberia.norway.org_api.web.dto.EventDto;
 import org.liberia.norway.org_api.web.dto.EventResponse;
 import org.liberia.norway.org_api.web.dto.EventUpsertRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,7 @@ import jakarta.validation.Path;
 
 import org.springframework.http.MediaType;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -29,7 +31,10 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+
+import org.liberia.norway.org_api.web.dto.EventMapper;
 
 @RestController
 @RequestMapping("/api/admin/events")
@@ -38,37 +43,43 @@ public class EventAdminController {
     private final EventRepository eventRepo;
     private final AlbumRepository albumRepo;
     private final FileStorageService storage;
+    private final EventMapper mapper;
 
-    public EventAdminController(EventRepository eventRepo, AlbumRepository albumRepo, FileStorageService storage) {
+    public EventAdminController(EventRepository eventRepo, AlbumRepository albumRepo, FileStorageService storage, EventMapper mapper) {
         this.eventRepo = eventRepo;
         this.albumRepo = albumRepo;
         this.storage = storage;
+        this.mapper = mapper;
     }
 
     @Value("${app.storage.public-path:/uploads}")
     private String publicBasePath;
 
-    @PostMapping(
-        path = "/uploads",
-        consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-        produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public Map<String, String> upload(@RequestPart("file") MultipartFile file,
-                                      @RequestPart(value = "folder", required = false) String folder) throws Exception {
-        String subdir = (folder == null || folder.isBlank()) ? "misc" : folder;
-        var stored = storage.store(file, subdir);
-        String filename = stored.toString();
+    @PostMapping(value = "/uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+public Map<String, String> upload(@RequestPart("file") MultipartFile file,
+                                  @RequestPart(value = "folder", required = false) String folder) throws IOException {
 
-        String base = publicBasePath.endsWith("/")
-            ? publicBasePath.substring(0, publicBasePath.length() - 1)
-            : publicBasePath;
+    // folder fra frontend: "events/covers"
+    String safeFolder = (folder == null || folder.isBlank()) ? "events" : folder;
+    safeFolder = safeFolder.replace("\\", "/").replace("..", "").replaceAll("^/+", "").replaceAll("/+$", "");
 
-        String cleanSub = subdir.replace('\\', '/');
-        if (cleanSub.startsWith("/")) cleanSub = cleanSub.substring(1);
-
-        String url = base + "/" + cleanSub + "/" + filename;
-        return Map.of("url", url, "filename", filename);
+    String ext = "jpg";
+    String original = file.getOriginalFilename();
+    if (original != null && original.contains(".")) {
+        ext = original.substring(original.lastIndexOf('.') + 1).toLowerCase();
     }
+
+    String stored = UUID.randomUUID() + "." + ext;
+
+    java.nio.file.Path dir = Paths.get("uploads").resolve(safeFolder);
+    Files.createDirectories(dir);
+
+    java.nio.file.Path target = dir.resolve(stored);
+    Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+    String url = "/uploads/" + safeFolder + "/" + stored;
+    return Map.of("url", url);
+}
 
 
     @GetMapping
@@ -100,6 +111,7 @@ public class EventAdminController {
         ev.setStartAt(body.startAt());
         ev.setEndAt(body.endAt());
         ev.setLocation(body.location());
+        ev.setCoverImageUrl(body.coverImageUrl()); // evt. emptyToNull(...)
         ev.setRsvpUrl(body.rsvpUrl());
         ev.setSlug(body.slug());
         ev.setPublished(Boolean.TRUE.equals(body.isPublished()));
@@ -111,7 +123,7 @@ public class EventAdminController {
             // Ingen album valgt -> lagre som NULL i DB
             ev.setGalleryAlbumId(null);
         } else {
-            Album album = albumRepo.findById(id)
+            Album album = albumRepo.findById(albumId)
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.BAD_REQUEST, "Album not found: " + albumId));
             ev.setGalleryAlbumId(album.getId());
@@ -151,6 +163,34 @@ public class EventAdminController {
         e = eventRepo.save(e);
         return EventResponse.from(e);
     }
+
+    @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public EventDto uploadCover(@PathVariable Long id, @RequestPart("file") MultipartFile file) throws IOException {
+    Event event = eventRepo.findById(id).orElseThrow();
+
+    // finn filendelse
+    String ext = "jpg";
+    String original = file.getOriginalFilename();
+    if (original != null && original.contains(".")) {
+        ext = original.substring(original.lastIndexOf('.') + 1).toLowerCase();
+    }
+
+    String stored = java.util.UUID.randomUUID() + "." + ext;
+
+    java.nio.file.Path dir = java.nio.file.Paths.get("uploads", "events");
+    java.nio.file.Files.createDirectories(dir);
+
+    java.nio.file.Path target = dir.resolve(stored);
+    java.nio.file.Files.copy(file.getInputStream(), target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+    // sett URL som frontend kan bruke
+    event.setCoverImageUrl("/uploads/events/" + stored);
+
+    eventRepo.save(event);
+    return mapper.toDto(event);
+    }
+
+
 
     private static void apply(Event e, EventUpsertRequest req) {
         e.setSlug(req.slug());
