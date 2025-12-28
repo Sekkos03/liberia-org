@@ -25,24 +25,24 @@ export default function WhatsAppGuidelines() {
             </p>
             <p className="wag__center">HERE ARE THE DETAILS</p>
             <p className="wag__center">
-              Ghana Union Oslo / Viken Norway WhatsApp Group Rules and Guidelines
+              Liberia Union Oslo / Viken Norway WhatsApp Group Rules and Guidelines
             </p>
             <ol className="wag__list">
               <li>
-                Ghana Union is a voluntary, non-political, non-religious and non-tribal organisation.
+                Liberia Union is a voluntary, non-political, non-religious and non-tribal organisation.
               </li>
               <li>
-                We have created this group for the Ghanaian community in Norway and its related activities.
+                We have created this group for the Liberian community in Norway and its related activities.
                 Irrelevant contents do not belong to this platform.
               </li>
               <li>
                 Please, do not discuss any religious, political and tribal matters on this platform unless
-                otherwise authorised by Ghana Union Norway.
+                otherwise authorised by Liberia Union Norway.
               </li>
               <li>Do not share irrelevant forwarded audio, videos, photos and messages.</li>
               <li>
                 Do not advertise any business or event on this group without approval from the board of
-                Ghana Union.
+                Liberia Union.
               </li>
               <li>
                 Mutual respect is required during discussions. Respect other viewpoints even if not aligned
@@ -67,7 +67,7 @@ export default function WhatsAppGuidelines() {
               well-oiled machine. It is crucial for all of us to follow these rules and make the Ghana Union
               Norway Group a better, focused and organised platform for the upliftment of our community.
             </p>
-            <p className="wag__center">Sincerely<br />Ghana Union Oslo / Viken Norway</p>
+            <p className="wag__center">Sincerely<br />Liberia Union Oslo / Viken Norway</p>
           </div>
         </section>
       </main>

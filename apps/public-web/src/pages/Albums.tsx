@@ -50,9 +50,18 @@ export default function Photos() {
       <main className="photos__wrap">
         {/* HERO */}
         <section className="photosHero" aria-label="Intro">
-          <div className="photosHero__banner">Photo of something</div>
+          <div className="photosHero__banner">
+            <img
+              src="src/assets/Liberian Headlines.png"
+              alt="Liberian headlines"
+              className="heroBanner__img"
+            />
+          </div>
+
           <div className="photosHero__title">PHOTOS AND VIDEOS GALLERY</div>
         </section>
+
+
 
         {/* status */}
         {q.isLoading && <div className="photos__loading">Laster galleri…</div>}
@@ -112,7 +121,18 @@ const css = `
   box-shadow:0 4px 16px rgba(13,26,46,.18);
   border:2px solid #0e1f3b;
   font-weight:600;
+  overflow: hidden;
+  height: 240px;
+
 }
+  .heroBanner__img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#fff;
+  display:block;
+}
+
 .photosHero__title{
   position:relative;
   margin-top:-36px;

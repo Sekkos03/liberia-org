@@ -26,11 +26,16 @@ export default function AboutUs() {
       <main className="about__wrap">
         {/* HERO */}
         <section className="aboutHero" aria-label="Intro">
-          <div className="aboutHero__banner">
-            <span className="aboutHero__placeholder">Video Bilde</span>
+         <div className="aboutHero__banner">
+            <img
+              src="src/assets/Liberian Headlines.png"
+              alt="Liberian headlines"
+              className="heroBanner__img"
+            />
           </div>
 
           <div className="aboutHero__title">About us</div>
+
 
           <div className="aboutHero__actions">
             <Link to="/about/constitution" className="aboutBtn">CONSTITUTION</Link>
@@ -93,7 +98,18 @@ const css = `
   display:grid;place-items:center;
   color:#cfe0fa;
   box-shadow:0 6px 18px rgba(12,18,32,.2);
+  overflow: hidden;
+  height: 240px;
+
 }
+  .heroBanner__img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#fff;
+  display:block;
+}
+
 .aboutHero__placeholder{opacity:.9}
 .aboutHero__title{
   position:relative;
