@@ -47,24 +47,17 @@ export default function Events() {
      <div id="events-page" className="min-h-screen flex flex-col bg-white">
       <Navbar />
       <main className="flex-1 pb-24">
-        <section className="max-w-6xl mx-auto px-4 pt-6">
-          <div className="bg-[#16254a] rounded-xl shadow border border-[#0f1b3a] text-white h-64 md:h-72 relative overflow-hidden">
-            {next?.coverImageUrl && (
-              <img
-                src={toPublicUrl(next.coverImageUrl)}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover opacity-40"
-              />
-            )}
-            <div className="absolute inset-0 flex items-center justify-between px-6 text-2xl opacity-70">
-              <span>‹</span>
-              <span>›</span>
-            </div>
-            <div className="absolute inset-0 grid place-items-center text-sm opacity-90">
-              Photos of something
-            </div>
+        <section className="max-w-6xl mx-auto px-50 pt-6">
+          {/* Header-bilde (erstatter "Photos of something" / VISMA-bildet) */}
+          <div className="bg-[#16254a] rounded-xl shadow border border-[#0f1b3a] h-64 md:h-70 overflow-hidden">
+            <img
+              src="src/assets/Liberian Headlines.png"
+              alt="Liberian headlines"
+              className="w-full h-full object-contain bg-white"
+            />
           </div>
         </section>
+
 
         {/* NESTE EVENT – kort med countdown */}
         <section className="max-w-3xl mx-auto px-4 mt-8">
