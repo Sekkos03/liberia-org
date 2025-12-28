@@ -14,12 +14,9 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -80,7 +77,7 @@ SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws 
 @Bean
 CorsConfigurationSource corsConfigurationSource() {
   var c = new CorsConfiguration();
-  c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5175", "https://liberia-org-admin.vercel.app" , "https://liberia-org-public.vercel.app/", "https://liberia-org.onrender.com"));
+  c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5175", "http://localhost:5174", "https://liberia-org-admin.vercel.app" , "https://liberia-org-public.vercel.app", "https://liberia-org.onrender.com"));
   c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
   c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
   c.setExposedHeaders(List.of("Location", "Content-Disposition"));
