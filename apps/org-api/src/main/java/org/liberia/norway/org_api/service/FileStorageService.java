@@ -21,8 +21,8 @@ public class FileStorageService {
     private final String publicBasePath; // e.g. "/uploads"
 
     public FileStorageService(
-            @Value("${app.storage.root:data/uploads}") String root,
-            @Value("${app.storage.public-path:data/uploads}") String publicBasePath
+            @Value("${app.storage.root:uploads}") String root,
+            @Value("${app.storage.public-path:/uploads}") String publicBasePath
     ) throws IOException {
         this.rootDir = Paths.get(root).toAbsolutePath().normalize();
         this.publicBasePath = publicBasePath.endsWith("/") ? publicBasePath.substring(0, publicBasePath.length()-1) : publicBasePath;
