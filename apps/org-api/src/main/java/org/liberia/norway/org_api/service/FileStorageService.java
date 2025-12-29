@@ -1,15 +1,18 @@
 package org.liberia.norway.org_api.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.nio.file.*;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.UUID;
 
 @Service
 public class FileStorageService {
@@ -18,8 +21,8 @@ public class FileStorageService {
     private final String publicBasePath; // e.g. "/uploads"
 
     public FileStorageService(
-            @Value("${app.storage.root:uploads}") String root,
-            @Value("${app.storage.public-path:/uploads}") String publicBasePath
+            @Value("${app.storage.root:data/uploads}") String root,
+            @Value("${app.storage.public-path:data/uploads}") String publicBasePath
     ) throws IOException {
         this.rootDir = Paths.get(root).toAbsolutePath().normalize();
         this.publicBasePath = publicBasePath.endsWith("/") ? publicBasePath.substring(0, publicBasePath.length()-1) : publicBasePath;
