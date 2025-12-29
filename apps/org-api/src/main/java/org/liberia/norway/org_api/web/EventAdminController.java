@@ -1,40 +1,42 @@
 package org.liberia.norway.org_api.web;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.OffsetDateTime;
+import java.util.Map;
+import java.util.UUID;
+
 import org.liberia.norway.org_api.model.Album;
 import org.liberia.norway.org_api.model.Event;
 import org.liberia.norway.org_api.repository.AlbumRepository;
 import org.liberia.norway.org_api.repository.EventRepository;
 import org.liberia.norway.org_api.service.FileStorageService;
-import org.liberia.norway.org_api.service.FileStorageService.StoredFile;
 import org.liberia.norway.org_api.web.dto.EventDto;
+import org.liberia.norway.org_api.web.dto.EventMapper;
 import org.liberia.norway.org_api.web.dto.EventResponse;
 import org.liberia.norway.org_api.web.dto.EventUpsertRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-
-import jakarta.validation.Path;
-
-import org.springframework.http.MediaType;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.liberia.norway.org_api.web.dto.EventMapper;
 
 @RestController
 @RequestMapping("/api/admin/events")
@@ -60,7 +62,7 @@ public Map<String, String> upload(@RequestPart("file") MultipartFile file,
                                   @RequestPart(value = "folder", required = false) String folder) throws IOException {
 
     // folder fra frontend: "events/covers"
-    String safeFolder = (folder == null || folder.isBlank()) ? "events" : folder;
+    String safeFolder = (folder == null || folder.isBlank()) ? "media3" : folder;
     safeFolder = safeFolder.replace("\\", "/").replace("..", "").replaceAll("^/+", "").replaceAll("/+$", "");
 
     String ext = "jpg";
@@ -184,7 +186,7 @@ public Map<String, String> upload(@RequestPart("file") MultipartFile file,
     java.nio.file.Files.copy(file.getInputStream(), target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
     // sett URL som frontend kan bruke
-    event.setCoverImageUrl("/uploads/events/" + stored);
+    event.setCoverImageUrl("/uploads/media3/" + stored);
 
     eventRepo.save(event);
     return mapper.toDto(event);

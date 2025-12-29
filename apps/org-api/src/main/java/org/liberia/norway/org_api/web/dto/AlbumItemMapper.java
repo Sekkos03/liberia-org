@@ -24,7 +24,7 @@ public final class AlbumItemMapper {
         if (it.getVideoUrl() != null)  return it.getVideoUrl();
 
         // som fallback: bygg en offentlig sti hvis vi kun har filnavn
-        if (it.getFileName() != null)  return "/uploads/albums/" + it.getFileName();
+        if (it.getFileName() != null)  return "/uploads/media2/" + it.getFileName();
 
         return null;
     }

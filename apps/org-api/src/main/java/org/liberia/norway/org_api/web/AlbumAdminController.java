@@ -1,10 +1,12 @@
 package org.liberia.norway.org_api.web;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.transaction.Transactional;
-import jakarta.validation.constraints.NotBlank;
-import lombok.RequiredArgsConstructor;
+import java.net.URI;
+import java.text.Normalizer;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.liberia.norway.org_api.model.Album;
 import org.liberia.norway.org_api.repository.AlbumRepository;
 import org.liberia.norway.org_api.web.dto.AlbumItemDto;
@@ -15,16 +17,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
-import java.text.Normalizer;
-import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/admin/albums")
@@ -159,7 +168,7 @@ public List<AlbumItemDto> getItems(@PathVariable Long id) {
                 // fallback URL hvis kun filnavn er lagret
                 if ((dto.getUrl() == null || dto.getUrl().isBlank()) && it.getFileName() != null) {
                     String base = publicBase();
-                    dto.setUrl(base + "/albums/" + it.getFileName());
+                    dto.setUrl(base + "/media2/" + it.getFileName());
 
                 }
                 return dto;
@@ -178,7 +187,7 @@ public List<AlbumItemDto> uploadItems(
     Album album = albumRepo.findById(id).orElseThrow();
 
     // Hvor vi lagrer fysisk (lokal disk). Juster ved behov:
-    java.nio.file.Path root = java.nio.file.Paths.get("uploads", "albums");
+    java.nio.file.Path root = java.nio.file.Paths.get("uploads", "media2");
     java.nio.file.Files.createDirectories(root);
 
     List<Album.MediaItem> saved = new java.util.ArrayList<>();
@@ -212,7 +221,7 @@ public List<AlbumItemDto> uploadItems(
 
         // Sett URL som kan brukes offentlig
         String base = publicBasePath.endsWith("/") ? publicBasePath.substring(0, publicBasePath.length()-1) : publicBasePath;
-        item.setUrl(base + "/albums/" + storedName);
+        item.setUrl(base + "/media2/" + storedName);
 
         // Legg på albumet (forutsatt cascade på items)
         album.getItems().add(item);

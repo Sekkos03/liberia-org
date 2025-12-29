@@ -1,18 +1,21 @@
 package org.liberia.norway.org_api.web;
 
-import lombok.RequiredArgsConstructor;
+import java.time.OffsetDateTime;
+
 import org.liberia.norway.org_api.model.Advert;
 import org.liberia.norway.org_api.repository.AdvertRepository;
 import org.liberia.norway.org_api.web.dto.AdvertDto;
 import org.liberia.norway.org_api.web.dto.AdvertMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.bind.annotation.*;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.OffsetDateTime;
-
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/adverts")

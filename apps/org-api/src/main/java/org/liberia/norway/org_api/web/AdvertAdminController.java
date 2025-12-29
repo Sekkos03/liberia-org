@@ -341,13 +341,13 @@ public void setActive(
             String ext = extensionFrom(original, ct);
             String storedName = UUID.randomUUID().toString().replace("-", "") + ext;
 
-            Path dir = Paths.get("uploads", "adverts");
+            Path dir = Paths.get("uploads", "media");
             Files.createDirectories(dir);
             Path target = dir.resolve(storedName);
 
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
-            String publicUrl = "/uploads/adverts/" + storedName;
+            String publicUrl = "/uploads/media/" + storedName;
             return new Stored(storedName, original, ct, file.getSize(), publicUrl);
         } catch (IOException e) {
             // Hvis vi ikke kan lagre, returner metadata uten filnavn/url
@@ -378,7 +378,8 @@ public void setActive(
 
     private static String buildDefaultPublicUrl(String storedName) {
         if (!StringUtils.hasText(storedName)) return null;
-        return "/uploads/adverts/" + storedName;
+        return "/uploads/media/" + storedName;
+
     }
 
     private static String safe(String s) {

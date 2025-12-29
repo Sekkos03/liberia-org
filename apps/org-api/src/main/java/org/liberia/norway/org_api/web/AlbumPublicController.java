@@ -1,19 +1,26 @@
 package org.liberia.norway.org_api.web;
 
-import lombok.RequiredArgsConstructor;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.liberia.norway.org_api.model.Album;
 import org.liberia.norway.org_api.repository.AlbumRepository;
 import org.liberia.norway.org_api.web.dto.AlbumItemDto;
 import org.liberia.norway.org_api.web.dto.AlbumItemMapper;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.*;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.transaction.Transactional;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/albums")
@@ -87,13 +94,13 @@ public class AlbumPublicController {
             String base = publicBasePath.endsWith("/")
                     ? publicBasePath.substring(0, publicBasePath.length() - 1)
                     : publicBasePath;
-            dto.setUrl(base + "/albums/" + it.getFileName());
+            dto.setUrl(base + "/media2/" + it.getFileName());
         }
         if ((dto.getThumbUrl() == null || dto.getThumbUrl().isBlank()) && it.getFileName() != null) {
             String base = publicBasePath.endsWith("/")
                     ? publicBasePath.substring(0, publicBasePath.length() - 1)
                     : publicBasePath;
-            dto.setThumbUrl(base + "/albums/thumbs/" + it.getFileName());
+            dto.setThumbUrl(base + "/media2/thumbs/" + it.getFileName());
         }
         return dto;
     }

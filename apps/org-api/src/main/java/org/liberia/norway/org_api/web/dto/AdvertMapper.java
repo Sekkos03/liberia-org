@@ -8,9 +8,9 @@ public final class AdvertMapper {
 
     public static AdvertDto toDto(Advert a) {
         String mediaUrl = a.getImageUrl();
-        // Om fil er opplastet, pek mot opplastet fil under /uploads/adverts/<fileName>
+        // Om fil er opplastet, pek mot opplastet fil under /uploads/media/<fileName>
         if (a.getFileName() != null && !a.getFileName().isBlank()) {
-            mediaUrl = "/uploads/adverts/" + a.getFileName();
+            mediaUrl = "/uploads/media/" + a.getFileName();
         }
 
         String kind = "IMAGE";

@@ -83,4 +83,5 @@ public class FileStorageService {
     }
 
     public record StoredFile(String fileName, String url, long size, String contentType, String originalName) {}
+    
 }

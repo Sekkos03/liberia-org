@@ -1,8 +1,8 @@
 package org.liberia.norway.org_api.web.dto;
 
-import org.liberia.norway.org_api.model.Album;
-
 import java.util.Comparator;
+
+import org.liberia.norway.org_api.model.Album;
 
 public final class AlbumMapper {
     private AlbumMapper() {}
@@ -25,7 +25,7 @@ public final class AlbumMapper {
                     String base = publicBasePath.endsWith("/")
                             ? publicBasePath.substring(0, publicBasePath.length() - 1)
                             : publicBasePath;
-                    coverUrl = base + "/albums/" + item.getFileName();
+                    coverUrl = base + "/media2/" + item.getFileName();
                 }
             }
         }

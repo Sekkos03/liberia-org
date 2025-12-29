@@ -1,10 +1,10 @@
 package org.liberia.norway.org_api.web.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+
+import jakarta.validation.constraints.NotBlank;
 
 public record EventUpsertRequest(
     @NotBlank String title,
