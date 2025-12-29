@@ -11,16 +11,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class UploadResourceConfig implements WebMvcConfigurer {
 
-  private final String uploadRoot;
+    @Value("${app.storage.root:/data/uploads}")
+    private String root;
 
-  public UploadResourceConfig(@Value("${app.storage.root:uploads}") String uploadRoot) {
-    this.uploadRoot = uploadRoot;
-  }
-
-  @Override
-  public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    Path root = Paths.get(uploadRoot).toAbsolutePath().normalize();
-    registry.addResourceHandler("/uploads/**")
-        .addResourceLocations("file:" + root + "/");
-  }
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        Path p = Paths.get(root).toAbsolutePath().normalize();
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:" + p.toString() + "/");
+    }
 }

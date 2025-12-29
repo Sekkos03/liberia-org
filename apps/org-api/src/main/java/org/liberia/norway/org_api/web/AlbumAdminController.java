@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.liberia.norway.org_api.model.Album;
 import org.liberia.norway.org_api.repository.AlbumRepository;
+import org.liberia.norway.org_api.service.FileStorageService;
 import org.liberia.norway.org_api.web.dto.AlbumItemDto;
 import org.liberia.norway.org_api.web.dto.AlbumItemMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -49,6 +52,7 @@ private String publicBase() {
 }
 
     private final AlbumRepository albumRepo;
+    private final FileStorageService fileStorageService;
 
     // ---------- DTOer ----------
     public record AdminAlbumDto(
@@ -176,65 +180,67 @@ public List<AlbumItemDto> getItems(@PathVariable Long id) {
             .collect(Collectors.toList());
 }
 
+@DeleteMapping("/{albumId}/items/{itemId}")
+@Transactional
+@ResponseStatus(HttpStatus.NO_CONTENT)
+public void deleteItem(
+        @PathVariable("albumId") Long albumId,
+        @PathVariable("itemId") Long itemId
+) {
+    Album album = albumRepo.findById(albumId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Album not found"));
+
+    Album.MediaItem item = album.getItems().stream()
+            .filter(it -> it.getId() != null && it.getId().equals(itemId))
+            .findFirst()
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
+
+    album.getItems().remove(item);
+    item.setAlbum(null);
+
+    albumRepo.save(album);
+}
+
+
+
 // --- ADD: last opp filer til album (admin) ---
 @PostMapping(path = "/{id}/items", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
 @Transactional
 public List<AlbumItemDto> uploadItems(
         @PathVariable Long id,
         @RequestPart("files") List<org.springframework.web.multipart.MultipartFile> files
-) throws java.io.IOException {
+) {
 
     Album album = albumRepo.findById(id).orElseThrow();
-
-    // Hvor vi lagrer fysisk (lokal disk). Juster ved behov:
-    java.nio.file.Path root = java.nio.file.Paths.get("uploads", "media2");
-    java.nio.file.Files.createDirectories(root);
-
     List<Album.MediaItem> saved = new java.util.ArrayList<>();
 
     for (org.springframework.web.multipart.MultipartFile mf : files) {
-        if (mf.isEmpty()) continue;
+        if (mf == null || mf.isEmpty()) continue;
 
-        // Filnavn: unik + original endelse
-        String original = mf.getOriginalFilename() == null ? "file" : mf.getOriginalFilename();
-        String ext = original.lastIndexOf('.') > -1 ? original.substring(original.lastIndexOf('.')) : "";
-        String storedName = java.util.UUID.randomUUID().toString().replace("-", "") + ext.toLowerCase();
+        var stored = fileStorageService.store(mf, "media2"); // <-- skriver til app.storage.root/media2
 
-        // Lagre fil
-        java.nio.file.Path dest = root.resolve(storedName);
-        try (java.io.InputStream in = mf.getInputStream()) {
-            java.nio.file.Files.copy(in, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        }
-
-        // Bestem type (image/video) fra content-type eller endelse
-        String ct = mf.getContentType() == null ? "" : mf.getContentType().toLowerCase();
+        String ct = (stored.contentType() == null) ? "" : stored.contentType().toLowerCase();
         boolean isVideo = ct.startsWith("video/")
-                || ext.equalsIgnoreCase(".mp4") || ext.equalsIgnoreCase(".mov")
-                || ext.equalsIgnoreCase(".mkv") || ext.equalsIgnoreCase(".webm")
-                || ext.equalsIgnoreCase(".avi");
+                || stored.fileName().toLowerCase().endsWith(".mp4")
+                || stored.fileName().toLowerCase().endsWith(".mov")
+                || stored.fileName().toLowerCase().endsWith(".mkv")
+                || stored.fileName().toLowerCase().endsWith(".webm")
+                || stored.fileName().toLowerCase().endsWith(".avi");
 
         Album.MediaItem item = new Album.MediaItem();
         item.setAlbum(album);
-        item.setFileName(storedName);
+        item.setFileName(stored.fileName());
         item.setMediaType(isVideo ? Album.MediaType.VIDEO : Album.MediaType.IMAGE);
         item.setCreatedAt(java.time.Instant.now());
+        item.setUrl(stored.url()); // <-- offentlig URL (/uploads/media2/...)
 
-        // Sett URL som kan brukes offentlig
-        String base = publicBasePath.endsWith("/") ? publicBasePath.substring(0, publicBasePath.length()-1) : publicBasePath;
-        item.setUrl(base + "/media2/" + storedName);
-
-        // Legg på albumet (forutsatt cascade på items)
         album.getItems().add(item);
         saved.add(item);
     }
 
-    // Persister items via albumet
     albumRepo.saveAndFlush(album);
-
-    // Returnér DTO-er
     return saved.stream().map(AlbumItemMapper::toDto).collect(Collectors.toList());
 }
-
 
 
 
