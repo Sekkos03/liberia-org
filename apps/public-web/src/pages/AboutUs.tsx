@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import liberianHeadlines from "../assets/Liberian Headlines.png";
 
 type Executive = {
   id: string | number;
@@ -28,7 +29,7 @@ export default function AboutUs() {
         <section className="aboutHero" aria-label="Intro">
          <div className="aboutHero__banner">
             <img
-              src="src/assets/Liberian Headlines.png"
+              src={liberianHeadlines}
               alt="Liberian headlines"
               className="heroBanner__img"
             />

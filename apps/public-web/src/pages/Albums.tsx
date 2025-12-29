@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { listPublicAlbums, type PublicAlbum } from "../lib/albums";
+import liberianHeadlines from "../assets/Liberian Headlines.png";
 
 /** En enkel mappe-ikonkomponent (SVG) */
 function FolderIcon({ className = "" }: { className?: string }) {
@@ -52,7 +53,7 @@ export default function Photos() {
         <section className="photosHero" aria-label="Intro">
           <div className="photosHero__banner">
             <img
-              src="src/assets/Liberian Headlines.png"
+              src={liberianHeadlines}
               alt="Liberian headlines"
               className="heroBanner__img"
             />

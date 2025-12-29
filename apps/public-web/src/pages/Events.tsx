@@ -6,6 +6,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import PlannedActivities from "../components/PlannedActivities";
 import { toPublicUrl } from "../lib/media";
+import liberianHeadlines from "../assets/Liberian Headlines.png";
 
 /** API-modell */
 export type EventDto = {
@@ -50,7 +51,7 @@ export default function Events() {
         <section className="photosHero" aria-label="Intro">
           <div className="photosHero__banner">
             <img
-              src="src/assets/Liberian Headlines.png"
+              src={liberianHeadlines}
               alt="Liberian headlines"
               className="heroBanner__img"
             />
