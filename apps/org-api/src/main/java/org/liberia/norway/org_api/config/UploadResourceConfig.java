@@ -20,9 +20,7 @@ public class UploadResourceConfig implements WebMvcConfigurer {
   @Override
   public void addResourceHandlers(ResourceHandlerRegistry registry) {
     Path root = Paths.get(uploadRoot).toAbsolutePath().normalize();
-
-    // Viktig: "file:" + ... + "/" (slash på slutten)
     registry.addResourceHandler("/uploads/**")
-        .addResourceLocations("file:" + root.toString() + "/");
+        .addResourceLocations("file:" + root + "/");
   }
 }
