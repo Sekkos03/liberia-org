@@ -51,8 +51,7 @@ SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws 
     .requestMatchers("/", "/error", "/favicon.ico").permitAll()
 
     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-    .requestMatchers("/index.html", "/assets/**", "/*.png", "/*.jpg", "/*.jpeg", "/*.mp4").permitAll()
-
+  
 
     // your public endpoints
     .requestMatchers("/uploads/**").permitAll()
