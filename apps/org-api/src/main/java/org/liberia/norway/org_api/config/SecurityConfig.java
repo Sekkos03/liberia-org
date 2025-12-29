@@ -44,28 +44,29 @@ SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws 
       http.cors(Customizer.withDefaults());
       http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
       http.authorizeHttpRequests(req -> req
-        .requestMatchers(HttpMethod.OPTIONS, "/**", "/error").permitAll()
-        .requestMatchers(
-          "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
-          ).permitAll()
-        .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
-        .requestMatchers(HttpMethod.POST, "/api/events").permitAll()
-        .requestMatchers(HttpMethod.GET, "/api/suggestions/**").permitAll()
-        .requestMatchers(HttpMethod.POST, "/api/suggestions").permitAll()
-        .requestMatchers(HttpMethod.POST, "/api/membership/**").permitAll()
-        .requestMatchers(
-          "/h2-console/**",
-          "/actuator/**",
-          "/uploads/**",
-          "/api/auth/login",
-          "/api/events/**",
-          "/api/albums/**",
-          "/api/pages/**",
-          "/api/adverts/**",
-          "/api/membership/**").permitAll()
-        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-        .anyRequest().authenticated()
-      );
+    // preflight
+    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+    // allow root + error page for browsers / health checks
+    .requestMatchers("/", "/error").permitAll()
+
+    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+    // your public endpoints
+    .requestMatchers("/uploads/**").permitAll()
+    .requestMatchers("/api/auth/login").permitAll()
+    .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
+    .requestMatchers(HttpMethod.POST, "/api/events").permitAll()
+    .requestMatchers(HttpMethod.GET, "/api/suggestions/**").permitAll()
+    .requestMatchers(HttpMethod.POST, "/api/suggestions").permitAll()
+    .requestMatchers(HttpMethod.POST, "/api/membership/**").permitAll()
+    .requestMatchers("/api/albums/**", "/api/pages/**", "/api/adverts/**", "/api/membership/**").permitAll()
+
+    // admin
+    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+    .anyRequest().authenticated()
+);
       http.headers(h -> h.frameOptions(f -> f.disable())); // H2 console
       http.addFilterBefore(jwt, UsernamePasswordAuthenticationFilter.class); 
       http.exceptionHandling(ex -> ex
@@ -77,7 +78,7 @@ SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws 
 @Bean
 CorsConfigurationSource corsConfigurationSource() {
   var c = new CorsConfiguration();
-  c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5175", "http://localhost:5174", "https://liberia-org-admin.vercel.app" , "https://liberia-org-public.vercel.app", "https://liberia-org.onrender.com"));
+  c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5175", "http://localhost:5174", "https://liberia-org-admin.vercel.app" , "https://liberia-org-public.vercel.app", "https://liberia-org.onrender.com/", "http://localhost:8080/"));
   c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
   c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
   c.setExposedHeaders(List.of("Location", "Content-Disposition"));
