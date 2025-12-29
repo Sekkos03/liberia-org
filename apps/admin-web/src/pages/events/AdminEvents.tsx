@@ -1,4 +1,4 @@
-import  { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listAdminEvents,
@@ -13,12 +13,11 @@ import {
 } from "../../lib/events";
 import { stripStoredFileToString, toPublicUrl } from "../../lib/media";
 
-/* ---------- helpers for dd/mm/yyyy + HH:mm ---------- */
+/* ---------- helpers for dd/mm/yyyy + HH:mm:ss ---------- */
 /** Lag ISO uten millisekunder i UTC, f.eks. 2025-11-24T05:00:00Z */
-/* helpers dd/mm/yyyy + HH:mm:ss */
 function isoFromLocalParts(dateDDMMYYYY: string, timeHHmmss: string): string | null {
   if (!dateDDMMYYYY) return null;
-  const [dd, mm, yyyy] = dateDDMMYYYY.split("/").map(Number);
+  const [dd, mm, yyyy] = dateDDMMYYYY.split("/").map((x) => Number(x));
   if (!dd || !mm || !yyyy) return null;
 
   const [hhRaw, miRaw, ssRaw] = (timeHHmmss || "00:00:00").split(":");
@@ -26,8 +25,18 @@ function isoFromLocalParts(dateDDMMYYYY: string, timeHHmmss: string): string | n
   const mi = Number(miRaw ?? 0);
   const ss = Number(ssRaw ?? 0);
 
+  // UTC-basert (stabilt på tvers av klient-timezone)
   const dt = new Date(Date.UTC(yyyy, mm - 1, dd, hh || 0, mi || 0, ss || 0));
-  return dt.toISOString().replace(/\.\d{3}Z$/, "Z");
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const y = dt.getUTCFullYear();
+  const m = pad(dt.getUTCMonth() + 1);
+  const d = pad(dt.getUTCDate());
+  const h = pad(dt.getUTCHours());
+  const i = pad(dt.getUTCMinutes());
+  const s = pad(dt.getUTCSeconds());
+
+  return `${y}-${m}-${d}T${h}:${i}:${s}Z`;
 }
 
 function partsFromIso(iso?: string | null): { date: string; time: string } {
@@ -39,7 +48,6 @@ function partsFromIso(iso?: string | null): { date: string; time: string } {
     time: `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`,
   };
 }
-
 
 /* ---------- cover upload ---------- */
 async function uploadCover(file: File): Promise<string> {
@@ -53,8 +61,7 @@ async function uploadCover(file: File): Promise<string> {
 
   // Backend kan returnere { url: "/uploads/..." } ELLER en "StoredFile[...]"
   const raw =
-    (res.data && (res.data.url || res.data.downloadUrl || res.data.path)) ||
-    res.data;
+    (res.data && (res.data.url || res.data.downloadUrl || res.data.path)) || res.data;
 
   const cleaned = stripStoredFileToString(String(raw)) || "";
   if (!cleaned) throw new Error("Upload response had no URL");
@@ -72,13 +79,15 @@ type FormState = {
   description: string;
   location: string;
   coverImageUrl: string;
-  rsvpUrl: string;
-  startDate: string;
-  startTime: string;
-  endDate: string;
-  endTime: string;
-  galleryAlbumId: string;
+
+  startDate: string; // dd/mm/yyyy
+  startTime: string; // HH:mm:ss
+  endDate: string; // dd/mm/yyyy
+  endTime: string; // HH:mm:ss
+
   isPublished: boolean;
+
+  // (kun intern)
   startAt?: string | null;
   endAt?: string | null;
 };
@@ -91,12 +100,10 @@ const emptyForm = (): FormState => ({
   description: "",
   location: "",
   coverImageUrl: "",
-  rsvpUrl: "",
   startDate: "",
   startTime: "",
   endDate: "",
   endTime: "",
-  galleryAlbumId: "",
   isPublished: false,
   startAt: null,
   endAt: null,
@@ -124,11 +131,13 @@ export default function AdminEvents() {
     mutationFn: (b: EventUpsertRequest) => apiCreateEvent(b),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-events"] }),
   });
+
   const updateM = useMutation({
     mutationFn: (p: { id: number; body: EventUpsertRequest }) =>
       apiUpdateEvent(p.id, p.body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-events"] }),
   });
+
   const delM = useMutation({
     mutationFn: (id: number) => apiDeleteEvent(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-events"] }),
@@ -144,6 +153,7 @@ export default function AdminEvents() {
     setErr(null);
     const sp = partsFromIso(e.startAt);
     const ep = partsFromIso(e.endAt);
+
     setEditing({
       id: e.id,
       slug: e.slug || "",
@@ -152,16 +162,15 @@ export default function AdminEvents() {
       description: e.description || "",
       location: e.location || "",
       coverImageUrl: e.coverImageUrl || "",
-      rsvpUrl: e.rsvpUrl || "",
       startDate: sp.date,
       startTime: sp.time,
       endDate: ep.date,
       endTime: ep.time,
-      galleryAlbumId: e.galleryAlbumId != null ? String(e.galleryAlbumId) : "",
       isPublished: !!e.isPublished,
       startAt: e.startAt ?? null,
       endAt: e.endAt ?? null,
     });
+
     setOpen(true);
   };
 
@@ -178,10 +187,13 @@ export default function AdminEvents() {
         description: editing.description || null,
         location: editing.location || null,
         coverImageUrl: editing.coverImageUrl || null,
-        rsvpUrl: editing.rsvpUrl || null,
+
+        // ✅ fjernet i UI, men beholdes kompatibelt i payload
+        rsvpUrl: null,
+        galleryAlbumId: null,
+
         startAt: isoFromLocalParts(editing.startDate, editing.startTime),
         endAt: isoFromLocalParts(editing.endDate, editing.endTime),
-        galleryAlbumId: editing.galleryAlbumId ? Number(editing.galleryAlbumId) : null,
         isPublished: editing.isPublished,
       };
 
@@ -212,12 +224,11 @@ export default function AdminEvents() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Events (Admin)</h1>
         <button
-  onClick={onNew}
-  className="rounded-xl px-4 py-2 border border-white/10 bg-white/10 hover:bg-white/15 transition"
->
-  + New event
-</button>
-
+          onClick={onNew}
+          className="rounded-xl px-4 py-2 border border-white/10 bg-white/10 hover:bg-white/15 transition"
+        >
+          + New event
+        </button>
       </div>
     ),
     []
@@ -227,7 +238,6 @@ export default function AdminEvents() {
 
   return (
     <div className="space-y-6">
-
       {header}
 
       {q.isLoading && <div>Loading…</div>}
@@ -276,10 +286,7 @@ export default function AdminEvents() {
                         >
                           {e.isPublished ? "Unpublish" : "Publish"}
                         </button>
-                        <button
-                          onClick={() => onEdit(e)}
-                          className="px-2 py-1 rounded border"
-                        >
+                        <button onClick={() => onEdit(e)} className="px-2 py-1 rounded border">
                           Edit
                         </button>
                         <button
@@ -324,9 +331,7 @@ export default function AdminEvents() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-3xl rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">
-                {editing.id ? "Edit event" : "New event"}
-              </h2>
+              <h2 className="text-xl font-semibold">{editing.id ? "Edit event" : "New event"}</h2>
               <button
                 onClick={() => setOpen(false)}
                 className="w-8 h-8 grid place-items-center rounded border"
@@ -372,14 +377,12 @@ export default function AdminEvents() {
                 <textarea
                   className="w-full rounded border px-3 py-2 min-h-[140px]"
                   value={editing.description}
-                  onChange={(e) =>
-                    setEditing((s) => ({ ...s, description: e.target.value }))
-                  }
+                  onChange={(e) => setEditing((s) => ({ ...s, description: e.target.value }))}
                 />
               </label>
 
-              {/* Location & RSVP */}
-              <label className="space-y-1">
+              {/* Location */}
+              <label className="space-y-1 md:col-span-2">
                 <span className="text-sm">Location</span>
                 <input
                   className="w-full rounded border px-3 py-2"
@@ -388,21 +391,16 @@ export default function AdminEvents() {
                 />
               </label>
 
-              <label className="space-y-1">
-                <span className="text-sm">RSVP URL</span>
-                <input
-                  className="w-full rounded border px-3 py-2"
-                  value={editing.rsvpUrl}
-                  onChange={(e) => setEditing((s) => ({ ...s, rsvpUrl: e.target.value }))}
-                />
-              </label>
-
               {/* Cover upload */}
               <div className="md:col-span-2 space-y-2">
                 <span className="text-sm block">Cover image</span>
                 {editing.coverImageUrl ? (
                   <div className="flex items-center gap-3">
-                    <img src={toPublicUrl(editing.coverImageUrl)} alt="" className="w-28 h-16 object-cover rounded border" />
+                    <img
+                      src={toPublicUrl(editing.coverImageUrl)}
+                      alt=""
+                      className="w-28 h-16 object-cover rounded border"
+                    />
                     <button
                       className="px-3 py-2 rounded border"
                       onClick={() => setEditing((s) => ({ ...s, coverImageUrl: "" }))}
@@ -421,8 +419,8 @@ export default function AdminEvents() {
                       }}
                     />
                     <span className="text-xs opacity-70">
-                      Select a file to upload (jpg/png/webp). It will be stored on the
-                      server and the URL will be saved as the event cover.
+                      Select a file to upload (jpg/png/webp). The server stores it and we save the
+                      returned URL.
                     </span>
                   </div>
                 )}
@@ -433,16 +431,17 @@ export default function AdminEvents() {
                 <span className="text-sm">Start date (dd/mm/yyyy)</span>
                 <input
                   className="w-full rounded border px-3 py-2"
-                  placeholder="09/11/2025"
+                  placeholder="11/12/2026"
                   value={editing.startDate}
                   onChange={(e) => setEditing((s) => ({ ...s, startDate: e.target.value }))}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm">Start time</span>
+                <span className="text-sm">Start time (HH:MM:SS)</span>
                 <input
                   className="w-full rounded border px-3 py-2"
                   type="time"
+                  step={1}
                   value={editing.startTime}
                   onChange={(e) => setEditing((s) => ({ ...s, startTime: e.target.value }))}
                 />
@@ -452,40 +451,27 @@ export default function AdminEvents() {
                 <span className="text-sm">End date (dd/mm/yyyy)</span>
                 <input
                   className="w-full rounded border px-3 py-2"
-                  placeholder="09/11/2025"
+                  placeholder="11/12/2026"
                   value={editing.endDate}
                   onChange={(e) => setEditing((s) => ({ ...s, endDate: e.target.value }))}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm">End time</span>
+                <span className="text-sm">End time (HH:MM:SS)</span>
                 <input
                   className="w-full rounded border px-3 py-2"
                   type="time"
+                  step={1}
                   value={editing.endTime}
                   onChange={(e) => setEditing((s) => ({ ...s, endTime: e.target.value }))}
                 />
               </label>
 
-              {/* Album & published */}
-              <label className="space-y-1">
-                <span className="text-sm">Album ID (optional)</span>
-                <input
-                  className="w-full rounded border px-3 py-2"
-                  value={editing.galleryAlbumId}
-                  onChange={(e) =>
-                    setEditing((s) => ({ ...s, galleryAlbumId: e.target.value }))
-                  }
-                />
-              </label>
-
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-2 md:col-span-2">
                 <input
                   type="checkbox"
                   checked={editing.isPublished}
-                  onChange={(e) =>
-                    setEditing((s) => ({ ...s, isPublished: e.target.checked }))
-                  }
+                  onChange={(e) => setEditing((s) => ({ ...s, isPublished: e.target.checked }))}
                 />
                 <span>Published</span>
               </label>
