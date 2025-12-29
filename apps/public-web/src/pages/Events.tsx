@@ -50,7 +50,7 @@ export default function Events() {
         <section className="photosHero" aria-label="Intro">
           <div className="photosHero__banner">
             <img
-              src="src/assets/Liberian Headlines.png"
+              src="public/Liberian Headlines.png"
               alt="Liberian headlines"
               className="heroBanner__img"
             />

@@ -44,7 +44,7 @@ SecurityFilterChain security(HttpSecurity http, @Lazy JwtAuthFilter jwt) throws 
       http.cors(Customizer.withDefaults());
       http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
       http.authorizeHttpRequests(req -> req
-        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        .requestMatchers(HttpMethod.OPTIONS, "/**", "/error").permitAll()
         .requestMatchers(
           "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
           ).permitAll()

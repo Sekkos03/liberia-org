@@ -15,35 +15,31 @@ import { stripStoredFileToString, toPublicUrl } from "../../lib/media";
 
 /* ---------- helpers for dd/mm/yyyy + HH:mm ---------- */
 /** Lag ISO uten millisekunder i UTC, f.eks. 2025-11-24T05:00:00Z */
-function isoFromLocalParts(dateDDMMYYYY: string, timeHHmm: string): string | null {
+/* helpers dd/mm/yyyy + HH:mm:ss */
+function isoFromLocalParts(dateDDMMYYYY: string, timeHHmmss: string): string | null {
   if (!dateDDMMYYYY) return null;
   const [dd, mm, yyyy] = dateDDMMYYYY.split("/").map(Number);
   if (!dd || !mm || !yyyy) return null;
 
-  const [hh, mi] = (timeHHmm || "00:00").split(":").map(Number);
-  const dt = new Date(Date.UTC(yyyy, mm - 1, dd, hh || 0, mi || 0, 0));
+  const [hhRaw, miRaw, ssRaw] = (timeHHmmss || "00:00:00").split(":");
+  const hh = Number(hhRaw ?? 0);
+  const mi = Number(miRaw ?? 0);
+  const ss = Number(ssRaw ?? 0);
 
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const y = dt.getUTCFullYear();
-  const m = pad(dt.getUTCMonth() + 1);
-  const d = pad(dt.getUTCDate());
-  const h = pad(dt.getUTCHours());
-  const i = pad(dt.getUTCMinutes());
-  const s = pad(dt.getUTCSeconds());
-
-  return `${y}-${m}-${d}T${h}:${i}:${s}Z`;
+  const dt = new Date(Date.UTC(yyyy, mm - 1, dd, hh || 0, mi || 0, ss || 0));
+  return dt.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 function partsFromIso(iso?: string | null): { date: string; time: string } {
   if (!iso) return { date: "", time: "" };
   const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mi = String(d.getMinutes()).padStart(2, "0");
-  return { date: `${dd}/${mm}/${yyyy}`, time: `${hh}:${mi}` };
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    date: `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`,
+    time: `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`,
+  };
 }
+
 
 /* ---------- cover upload ---------- */
 async function uploadCover(file: File): Promise<string> {
