@@ -119,9 +119,10 @@ export function normalizeAdvert(a: any): Advert {
     normAdvertMediaPath(a?.thumbUrl ?? a?.thumb_url ?? a?.thumbnailUrl ?? a?.thumbnail_url) ||
     "";
 
-  const createdAt = a?.createdAt ?? a?.created_at ?? a?.publishedAt ?? a?.published_at ?? null;
-  const updatedAt = a?.updatedAt ?? a?.updated_at ?? null;
-
+  const createdAtRaw = a?.createdAt ?? a?.created_at ?? a?.publishedAt ?? a?.published_at ?? null;
+  const updatedAtRaw = a?.updatedAt ?? a?.updated_at ?? null;
+  const createdAt = normalizeDateValue(createdAtRaw);
+  const updatedAt = normalizeDateValue(updatedAtRaw);
   const active =
     a?.active ??
     a?.isActive ??
@@ -162,4 +163,36 @@ export function splitByKind(items: Advert[]) {
   const images = items.filter((x) => x.mediaType === "IMAGE");
   const videos = items.filter((x) => x.mediaType === "VIDEO");
   return { images, videos };
+}
+
+function normalizeDateValue(v: any): string | null {
+  if (v == null) return null;
+
+  // Date
+  if (v instanceof Date) return v.toISOString();
+
+  // number: epoch seconds OR epoch ms
+  if (typeof v === "number" && Number.isFinite(v)) {
+    const ms = v < 1e12 ? v * 1000 : v; // < 1e12 => seconds
+    return new Date(ms).toISOString();
+  }
+
+  // string
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (!s) return null;
+
+    // numeric string => epoch seconds/ms
+    if (/^\d+$/.test(s)) {
+      const n = Number(s);
+      const ms = n < 1e12 ? n * 1000 : n;
+      return new Date(ms).toISOString();
+    }
+
+    // iso-ish
+    const t = Date.parse(s);
+    if (!Number.isNaN(t)) return new Date(t).toISOString();
+  }
+
+  return null;
 }

@@ -216,11 +216,12 @@ export default function AdminEvents() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Events (Admin)</h1>
         <button
-          onClick={onNew}
-          className="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
-        >
-          + New event
-        </button>
+  onClick={onNew}
+  className="rounded-xl px-4 py-2 border border-white/10 bg-white/10 hover:bg-white/15 transition"
+>
+  + New event
+</button>
+
       </div>
     ),
     []
@@ -229,7 +230,8 @@ export default function AdminEvents() {
   const totalPages = q.data?.totalPages ?? 1;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
+    <div className="space-y-6">
+
       {header}
 
       {q.isLoading && <div>Loading…</div>}

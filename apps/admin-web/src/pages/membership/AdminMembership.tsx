@@ -31,7 +31,7 @@ export default function AdminMembership() {
   const members = useMemo(() => qMembers.data?.content ?? [], [qMembers.data]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
+    <div className="space-y-6">
       <h1 className="text-4xl font-extrabold">Membership (Admin)</h1>
 
       <section className="space-y-3">
@@ -170,7 +170,7 @@ function Field({
     <label className="block">
       <div className="mb-1 opacity-80 text-sm">{label}</div>
       <input
-        className="w/full rounded-xl bg-transparent border border-white/15 px-3 py-2 outline-none focus:border-violet-500"
+        className="w-full rounded-xl bg-transparent border border-white/15 px-3 py-2 outline-none focus:border-violet-500"
         type={type}
         value={value ?? ""}
         onChange={onChange}

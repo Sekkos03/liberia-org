@@ -18,6 +18,8 @@ import "./index.css";
 import AdminMembership from "./pages/membership/AdminMembership";
 import AdminSuggestions from "./pages/suggestions/AdminSuggestions";
 import AdminAlbumDetail from "./pages/admin/AdminAlbumDetail";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 const qc = new QueryClient();
 
@@ -28,17 +30,18 @@ const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        element: <App />,
+        element: <AdminLayout />,
         children: [
-          { index: true, element: <Navigate to="/" replace /> },
+          { index: true, element: <Navigate to="dashboard" replace /> },
+          { path: "dashboard", element: <AdminDashboard /> },
+
           { path: "events", element: <AdminEvents /> },
           { path: "albums", element: <AdminAlbums /> },
           { path: "adverts", element: <AdminAdverts /> },
-          {path: "membership", element: <AdminMembership />},
-          {path: "suggestions", element: <AdminSuggestions />},
-          {path: "/admin/albums/:id", element: <AdminAlbumDetail />}
+          { path: "membership", element: <AdminMembership /> },
+          { path: "suggestions", element: <AdminSuggestions /> },
 
-
+          { path: "admin/albums/:id", element: <AdminAlbumDetail /> },
         ],
       },
     ],

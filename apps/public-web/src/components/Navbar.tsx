@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import ContactModal from "./ContactModal";
-import UlanLogo from "../assets/Ulan_logo-removebg-preview.png"; // ← NY
+import UlanLogo from "../assets/Ulan_logo-removebg-preview.png";
 
 type NavItem = { to: string; label: string };
 
@@ -20,6 +20,14 @@ const links: NavItem[] = [
 export default function Navbar() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const openContact = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -27,49 +35,70 @@ export default function Navbar() {
     window.dispatchEvent(new CustomEvent("contact:open"));
   };
 
+  const navLinkBase =
+    "relative inline-flex items-center px-2 py-1 rounded-full " +
+    "transition-all duration-200 ease-out " +
+    "hover:text-emerald-200 hover:-translate-y-[1px] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60";
+
+  const underline =
+    "after:content-[''] after:absolute after:left-2 after:right-2 after:-bottom-1 " +
+    "after:h-[2px] after:rounded-full after:bg-emerald-300 " +
+    "after:origin-left after:scale-x-0 after:transition-transform after:duration-200 " +
+    "hover:after:scale-x-100";
+
   const linkClasses = (active: boolean) =>
-    `hover:text-emerald-400 transition ${
-      active ? "text-emerald-400 font-medium" : "text-white"
-    }`;
+    [
+      navLinkBase,
+      underline,
+      active ? "text-emerald-300 bg-white/10 after:scale-x-100" : "text-white/95",
+    ].join(" ");
 
   return (
     <>
-      <header className="bg-[#1f2a44] text-white shadow-md">
+      <header
+        className={[
+          "sticky top-0 z-50 text-white",
+          "transition-all duration-300",
+          scrolled
+            ? "bg-[#1f2a44]/75 backdrop-blur-md shadow-lg"
+            : "bg-[#1f2a44] shadow-md",
+        ].join(" ")}
+      >
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Brand: logo → hjem */}
+          {/* Brand */}
           <Link
             to="/"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 group"
             aria-label="Liberian Organization in Norway – Home"
           >
             <img
               src={UlanLogo}
               alt="ULAN – Union of Liberian Associations in Norway"
-              className="h-15 w-15 sm:h-17 sm:w-20 object-contain drop-shadow"
+              className="h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow transition-transform duration-200 group-hover:scale-[1.04]"
             />
             <span className="sr-only">Liberian Organization in Norway</span>
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex gap-6">
+          <nav className="hidden md:flex gap-4 items-center">
             {links.map((l) =>
               l.label === "Contact" ? (
                 <button
                   key={l.label}
                   type="button"
                   onClick={openContact}
-                  className={linkClasses(false) + " cursor-pointer"}
+                  className={[
+                    navLinkBase,
+                    underline,
+                    "text-white/95 hover:text-emerald-200",
+                  ].join(" ")}
                   aria-haspopup="dialog"
                   aria-controls="contact"
                 >
-                  {l.label}
+                  Contact
                 </button>
               ) : (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  className={linkClasses(pathname === l.to)}
-                >
+                <Link key={l.to} to={l.to} className={linkClasses(pathname === l.to)}>
                   {l.label}
                 </Link>
               )
@@ -78,62 +107,75 @@ export default function Navbar() {
 
           {/* Mobile toggle */}
           <button
-            className="md:hidden p-2 rounded hover:bg-white/10"
-            onClick={() => setOpen(!open)}
+            className={[
+              "md:hidden p-2 rounded-lg",
+              "transition-all duration-200",
+              "hover:bg-white/10 active:scale-95",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60",
+            ].join(" ")}
+            onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
+            aria-expanded={open}
           >
-            {open ? <X size={22} /> : <Menu size={22} />}
+            <span className={`inline-block transition-transform duration-200 ${open ? "rotate-90" : "rotate-0"}`}>
+              {open ? <X size={22} /> : <Menu size={22} />}
+            </span>
           </button>
         </div>
 
-        {/* Mobile menu */}
-        {open && (
-          <nav className="md:hidden bg-[#1f2a44] border-t border-white/10">
-            <div className="flex flex-col px-4 py-2 space-y-2">
-              {links.map((l) =>
-                l.label === "Contact" ? (
-                  <button
-                    key={l.label}
-                    type="button"
-                    onClick={openContact}
-                    className="block text-left py-2 px-2 rounded hover:bg-white/10 text-white"
-                    aria-haspopup="dialog"
-                    aria-controls="contact"
-                  >
-                    {l.label}
-                  </button>
-                ) : (
-                  <Link
-                    key={l.to}
-                    to={l.to}
-                    onClick={() => setOpen(false)}
-                    className={`block py-2 px-2 rounded hover:bg:white/10 ${
-                      pathname === l.to ? "text-emerald-400 font-medium" : "text-white"
-                    }`}
-                  >
-                    {l.label}
-                  </Link>
-                )
-              )}
-            </div>
-          </nav>
-        )}
+        {/* Mobile menu (smooth) */}
+        <nav
+          className={[
+            "md:hidden overflow-hidden border-t border-white/10",
+            "transition-all duration-300 ease-out",
+            open ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+          ].join(" ")}
+        >
+          <div className="flex flex-col px-4 py-3 space-y-1">
+            {links.map((l) =>
+              l.label === "Contact" ? (
+                <button
+                  key={l.label}
+                  type="button"
+                  onClick={openContact}
+                  className={[
+                    "text-left py-2 px-3 rounded-lg",
+                    "text-white/95",
+                    "transition-all duration-200",
+                    "hover:bg-white/10 hover:text-emerald-200 active:scale-[0.99]",
+                  ].join(" ")}
+                  aria-haspopup="dialog"
+                  aria-controls="contact"
+                >
+                  Contact
+                </button>
+              ) : (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setOpen(false)}
+                  className={[
+                    "block py-2 px-3 rounded-lg",
+                    "transition-all duration-200",
+                    "hover:bg-white/10 hover:text-emerald-200 active:scale-[0.99]",
+                    pathname === l.to ? "bg-white/10 text-emerald-300 font-medium" : "text-white/95",
+                  ].join(" ")}
+                >
+                  {l.label}
+                </Link>
+              )
+            )}
+          </div>
+        </nav>
       </header>
 
-      {/* Kontaktmodal med logo som badge */}
       <ContactModal
         phone="+47 12 34 56 78"
         email="post@liberia-org.no"
         account="1503.45.67890"
         vipps="123456"
         org="999 999 999"
-        badgeContent={
-          <img
-            src={UlanLogo}
-            alt=""        // dekorativ i dette tilfellet
-            className="cBadge__img"
-          />
-        }
+        badgeContent={<img src={UlanLogo} alt="" className="cBadge__img" />}
       />
     </>
   );

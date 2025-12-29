@@ -104,64 +104,55 @@ footer, .site-footer { position: static; }
   isolation:isolate; /* for glans-lag */
 }
 
-/* Primær: tydelig gradient på mørk bakgrunn */
+/* === Mer "wow" på knappene === */
+
+/* Gradient flyter litt på primary */
 .btn--primary{
-  --btn-bg:linear-gradient(135deg, var(--accent-500) 0%, var(--accent-700) 100%);
-  --btn-fg:var(--on-accent);
+  background-size: 200% 200%;
+  animation: gradientShift 7s ease infinite;
+}
+@keyframes gradientShift{
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-/* Sekundær/ghost: semitransparent med kantlinje */
-.btn--ghost{
-  --btn-bg:rgba(255,255,255,.10);
-  color:#fff;
-  border-color:rgba(255,255,255,.45);
-  backdrop-filter:saturate(140%) blur(2px);
-}
-
-/* Hover/press */
+/* Litt mer "pop" på hover */
 .btn:hover{
-  transform:translateY(-2px);
-  box-shadow:0 10px 24px rgba(0,0,0,.35);
-}
-.btn:active{
-  transform:translateY(0);
-  box-shadow:0 6px 18px rgba(0,0,0,.25);
+  transform: translateY(-3px) scale(1.02);
 }
 
-/* Tastaturtilgjengelighet */
-.btn:focus-visible{
-  outline:none;
-  box-shadow:
-    0 0 0 .2rem rgba(255,255,255,.25),
-    0 0 0 .45rem rgba(59,130,246,.55);
+/* Glød på primary ved hover */
+.btn--primary:hover{
+  box-shadow: 0 14px 34px rgba(0,0,0,.42), 0 0 0 1px rgba(255,255,255,.08);
 }
 
-/* Diskré glans-sweep ved hover (CSS-only) */
-.btn::before{
+/* Ripple ved klikk (CSS-only) */
+.btn::after{
   content:"";
-  position:absolute; inset:0;
+  position:absolute;
+  inset:0;
   border-radius:inherit;
-  background:linear-gradient(120deg,
-    transparent 0%,
-    rgba(255,255,255,.35) 25%,
-    transparent 50%);
-  transform:translateX(-120%);
-  transition:transform .6s ease;
-  mix-blend-mode:soft-light;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.55), transparent 55%);
+  opacity:0;
+  transform: scale(0.6);
   pointer-events:none;
 }
-.btn:hover::before{ transform:translateX(120%); }
-
-/* Inngangs-animasjon på hero-teksten/knapper */
-@keyframes fadeUp{
-  from{ opacity:0; transform:translateY(12px) scale(.98); }
-  to  { opacity:1; transform:translateY(0)   scale(1); }
+.btn:active::after{
+  animation: ripple .55s ease-out;
 }
-.hero-title{ animation:fadeUp .55s cubic-bezier(.2,.7,.2,1) both; }
-.hero-subtitle{ animation:fadeUp .60s cubic-bezier(.2,.7,.2,1) both .06s; }
-.actions{ animation:fadeUp .65s cubic-bezier(.2,.7,.2,1) both .12s; }
+@keyframes ripple{
+  0%   { opacity:.25; transform:scale(.6); }
+  100% { opacity:0;   transform:scale(1.35); }
+}
 
-/* Mindre bevegelse hvis brukeren ønsker det */
+/* Litt flyt på ghost-knappen når du hover */
+.btn--ghost:hover{
+  border-color: rgba(255,255,255,.75);
+  background: rgba(255,255,255,.14);
+}
+
+/* Mindre bevegelse for de som ønsker det */
 @media (prefers-reduced-motion: reduce){
-  *{ animation:none !important; transition:none !important; }
+  .btn--primary{ animation: none !important; }
 }

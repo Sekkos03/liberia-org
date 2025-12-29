@@ -6,7 +6,14 @@ import Footer from "../components/Footer";
 import { fetchAdverts as loadAdverts, splitByKind, type Advert } from "../lib/adverts";
 import { toPublicUrl } from "../lib/media";
 
-const SLIDE_MS = 7000;
+const SLIDE_IMAGE_MS = 14000;
+
+function fmtDate(iso?: string | null) {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  return new Date(t).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
+}
 
 export default function AdvertsPage() {
   const q = useQuery({
@@ -16,34 +23,19 @@ export default function AdvertsPage() {
 
   const items = useMemo(() => {
     const list = (q.data ?? []).slice();
-    // hvis active finnes, filtrer på den
     const filtered = list.filter((a) => a.active !== false);
-    // nyeste først
+
     filtered.sort((a, b) => {
       const da = a.createdAt ? Date.parse(a.createdAt) : 0;
       const db = b.createdAt ? Date.parse(b.createdAt) : 0;
       return db - da;
     });
+
     return filtered;
   }, [q.data]);
 
   const [idx, setIdx] = useState(0);
   const timerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!items.length) return;
-    if (timerRef.current) window.clearInterval(timerRef.current);
-
-    timerRef.current = window.setInterval(() => {
-      setIdx((v) => (v + 1) % items.length);
-    }, SLIDE_MS);
-
-    return () => {
-      if (timerRef.current) window.clearInterval(timerRef.current);
-    };
-  }, [items.length]);
-
-  useEffect(() => setIdx(0), [items.length]);
 
   const current = items[idx] ?? null;
   const { images, videos } = useMemo(() => splitByKind(items), [items]);
@@ -51,61 +43,85 @@ export default function AdvertsPage() {
   const prev = () => items.length && setIdx((v) => (v - 1 + items.length) % items.length);
   const next = () => items.length && setIdx((v) => (v + 1) % items.length);
 
+  useEffect(() => setIdx(0), [items.length]);
+
+  // Slideshow: bilder på timer, video -> onEnded
+  useEffect(() => {
+    if (!items.length) return;
+
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+
+    if (current?.mediaType === "VIDEO") return;
+
+    timerRef.current = window.setTimeout(() => {
+      setIdx((v) => (v + 1) % items.length);
+    }, SLIDE_IMAGE_MS);
+
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+  }, [idx, items.length, current?.mediaType]);
+
   return (
     <div className="adverts">
       <Navbar />
 
-      <main className="adverts__wrap">
-        <h1 className="adverts__title">Adverts</h1>
+      <main className="wrap">
+        <header className="pageHead">
+          <h1>Adverts</h1>
+        </header>
 
         <section className="hero">
-          <button className="hero__nav hero__nav--left" onClick={prev} aria-label="Forrige">
-            {"<"}
+          <button className="navBtn left" onClick={prev} aria-label="Previous" type="button">
+            ‹
           </button>
 
-          <div className="hero__stage">
+          <div className="heroStage">
             {q.isLoading ? (
-              <div className="hero__empty">Laster…</div>
+              <div className="empty">Loading…</div>
             ) : current ? (
-              <Slide item={current} />
+              <HeroSlide item={current} idx={idx} total={items.length} onVideoEnded={next} />
             ) : (
-              <div className="hero__empty">Ingen annonser publisert.</div>
+              <div className="empty">No adverts published.</div>
             )}
           </div>
 
-          <button className="hero__nav hero__nav--right" onClick={next} aria-label="Neste">
-            {">"}
+          <button className="navBtn right" onClick={next} aria-label="Next" type="button">
+            ›
           </button>
 
-          <div className="hero__progress">
-            <span key={idx} className="hero__bar" style={{ animationDuration: `${SLIDE_MS}ms` }} />
-          </div>
+          {/* Progress kun for bilder */}
+          {current?.mediaType !== "VIDEO" && items.length > 1 && (
+            <div className="progress">
+              <span key={idx} className="bar" style={{ animationDuration: `${SLIDE_IMAGE_MS}ms` }} />
+            </div>
+          )}
         </section>
 
         <section className="lists">
-          <div className="listCol">
-            <header className="listCol__head">
-              <h2>Bildeannonser</h2>
-              <span className="listCol__count">{images.length}</span>
-            </header>
+          <div className="col">
+            <div className="colHead">
+              <h2>Image adverts</h2>
+              <span className="pill">{images.length}</span>
+            </div>
 
             {images.length === 0 ? (
-              <p className="muted">Ingen bilder publisert.</p>
+              <p className="muted">No images.</p>
             ) : (
-              <div className="cards">{images.map((a) => <Card key={String(a.id)} item={a} />)}</div>
+              <div className="grid">{images.map((a) => <Card key={String(a.id)} item={a} />)}</div>
             )}
           </div>
 
-          <div className="listCol">
-            <header className="listCol__head">
-              <h2>Videoannonser</h2>
-              <span className="listCol__count">{videos.length}</span>
-            </header>
+          <div className="col">
+            <div className="colHead">
+              <h2>Video adverts</h2>
+              <span className="pill">{videos.length}</span>
+            </div>
 
             {videos.length === 0 ? (
-              <p className="muted">Ingen videoer publisert.</p>
+              <p className="muted">No videos.</p>
             ) : (
-              <div className="cards">{videos.map((a) => <Card key={String(a.id)} item={a} />)}</div>
+              <div className="grid">{videos.map((a) => <Card key={String(a.id)} item={a} />)}</div>
             )}
           </div>
         </section>
@@ -117,30 +133,54 @@ export default function AdvertsPage() {
   );
 }
 
-function Slide({ item }: { item: Advert }) {
+function HeroSlide({
+  item,
+  idx,
+  total,
+  onVideoEnded,
+}: {
+  item: Advert;
+  idx: number;
+  total: number;
+  onVideoEnded?: () => void;
+}) {
   const isVideo = item.mediaType === "VIDEO";
   const src = item.mediaUrl ? toPublicUrl(item.mediaUrl) : "";
-
-  // Viktig: aldri render <img src=""> / <video src="">
-  if (!src) {
-    return (
-      <div className="slide">
-        <div className="slide__empty">Ingen media</div>
-        <div className="slide__caption">{item.title}</div>
-      </div>
-    );
-  }
-
   const poster = item.posterUrl ? toPublicUrl(item.posterUrl) : undefined;
 
+  const published = fmtDate(item.createdAt || item.updatedAt);
+
   return (
-    <div className="slide">
-      {isVideo ? (
-        <video className="slide__media" src={src} poster={poster} controls playsInline />
-      ) : (
-        <img className="slide__media" src={src} alt={item.title} />
-      )}
-      <div className="slide__caption">{item.title}</div>
+    <div className="heroInner">
+      <div className="heroMedia">
+        {src ? (
+          isVideo ? (
+            <video
+              key={String(item.id)}
+              src={src}
+              poster={poster}
+              controls
+              playsInline
+              autoPlay
+              onEnded={onVideoEnded}
+            />
+          ) : (
+            <img src={src} alt={item.title} />
+          )
+        ) : (
+          <div className="empty">No media</div>
+        )}
+      </div>
+
+      <div className="heroMeta">
+        <div>
+          <div className="heroTitle">{item.title}</div>
+          {published && <div className="heroSub">Published: {published}</div>}
+        </div>
+        <div className="heroCount">
+          {total > 0 ? `${idx + 1} / ${total}` : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -149,12 +189,25 @@ function Card({ item }: { item: Advert }) {
   const isVideo = item.mediaType === "VIDEO";
   const media = item.mediaUrl ? toPublicUrl(item.mediaUrl) : "";
   const poster = item.posterUrl ? toPublicUrl(item.posterUrl) : undefined;
+
+  const published = fmtDate(item.createdAt || item.updatedAt);
+
   const [open, setOpen] = useState(false);
+
+  // ESC to close
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   return (
     <>
       <article className="card" onClick={() => setOpen(true)} role="button" tabIndex={0}>
-        <div className="card__thumb">
+        <div className="thumb">
           {media ? (
             isVideo ? (
               <video src={media} poster={poster} muted playsInline />
@@ -162,38 +215,44 @@ function Card({ item }: { item: Advert }) {
               <img src={media} alt={item.title} />
             )
           ) : (
-            <div className="card__noimg">no img</div>
+            <div className="noimg">No image</div>
           )}
+          {isVideo && <span className="badge">▶</span>}
         </div>
 
-        <div className="card__body">
-          <h3 className="card__title">{item.title}</h3>
-          {item.createdAt && (
-            <time className="card__meta" dateTime={item.createdAt}>
-              {new Date(item.createdAt).toLocaleDateString()}
-            </time>
-          )}
+        <div className="body">
+          <h3>{item.title}</h3>
+          {published && <time>{published}</time>}
         </div>
       </article>
 
       {open && (
-        <div className="lightbox" onClick={() => setOpen(false)}>
-          <div className="lightbox__inner" onClick={(e) => e.stopPropagation()}>
-            <button className="lightbox__close" onClick={() => setOpen(false)} aria-label="Lukk">
-              ✕
-            </button>
+        <div className="modal" onClick={() => setOpen(false)} role="dialog" aria-modal="true">
+          <div className="modalBox" onClick={(e) => e.stopPropagation()}>
+            {/* ✅ CLEAN TOP BAR => X alltid riktig plassert */}
+            <div className="modalTop">
+              <div className="modalTitle">{item.title}</div>
+              <button
+                className="closeBtn"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                type="button"
+              >
+                ✕
+              </button>
+            </div>
 
-            {media ? (
-              isVideo ? (
-                <video src={media} poster={poster} controls autoPlay />
+            <div className="modalMedia">
+              {media ? (
+                isVideo ? (
+                  <video src={media} poster={poster} controls autoPlay />
+                ) : (
+                  <img src={media} alt={item.title} />
+                )
               ) : (
-                <img src={media} alt={item.title} />
-              )
-            ) : (
-              <div className="hero__empty">Ingen media</div>
-            )}
-
-            <div className="lightbox__caption">{item.title}</div>
+                <div className="empty">No media</div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -201,51 +260,152 @@ function Card({ item }: { item: Advert }) {
   );
 }
 
-/* CSS (samme som før, med et par små tillegg for "no img") */
 const css = `
-.adverts{display:flex;flex-direction:column;min-height:100vh;}
-.adverts__wrap{flex:1;width:min(1200px,94vw);margin:0 auto;padding:32px 0 56px;}
-.adverts__title{font-size:44px;line-height:1.15;margin:8px 8px 24px 8px;font-weight:800;letter-spacing:-.02em}
+.adverts{
+  min-height:100vh;
+  background:
+    radial-gradient(1000px 600px at 20% 0%, rgba(21,178,169,.12), transparent 60%),
+    radial-gradient(900px 520px at 80% 10%, rgba(147,197,253,.14), transparent 60%),
+    #fff;
+}
 
-.hero{position:relative;border-radius:20px;background:#0b1e35;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:22px 56px 18px 56px;min-height:360px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.hero__stage{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-.hero__empty{color:#cbd5e1;opacity:.9;font-size:14px}
-.hero__nav{position:absolute;top:50%;transform:translateY(-50%);border:0;background:#f8fafc;color:#111827;border-radius:10px;height:40px;width:40px;display:grid;place-items:center;cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.25)}
-.hero__nav--left{left:16px}
-.hero__nav--right{right:16px}
-.hero__nav:hover{filter:brightness(.95)}
-.hero__progress{position:absolute;left:0;right:0;bottom:0;height:8px;background:rgba(255,255,255,.18)}
-.hero__bar{display:block;height:100%;background:#15b2a9;animation-name:heroBar;animation-timing-function:linear}
-@keyframes heroBar{from{width:0}to{width:100%}}
+.wrap{width:min(1200px,94vw);margin:0 auto;padding:28px 0 56px;}
+.pageHead{margin:8px 8px 18px 8px;}
+.pageHead h1{margin:0;font-size:44px;letter-spacing:-.02em;font-weight:900}
+.pageHead p{margin:6px 0 0;color:#334155}
 
-.slide{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
-.slide__media{max-width:100%;max-height:310px;border-radius:14px;box-shadow:0 12px 25px rgba(0,0,0,.25);object-fit:contain;background:#0b1a2e}
-.slide__caption{color:#e5e7eb;font-weight:700}
-.slide__empty{width:100%;height:310px;border-radius:14px;background:rgba(0,0,0,.15);display:grid;place-items:center;color:#cbd5e1}
+.hero{
+  position:relative;
+  background:#0b1e35;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 18px 40px rgba(0,0,0,.18);
+  padding:18px 52px 28px 52px;
+  min-height:420px;
+  overflow:hidden;
+}
+.heroStage{display:flex;align-items:center;justify-content:center;height:100%}
+.navBtn{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:42px;height:42px;border-radius:12px;
+  border:0;background:rgba(255,255,255,.92);
+  box-shadow:0 10px 20px rgba(0,0,0,.25);
+  cursor:pointer;font-size:26px;line-height:0;
+}
+.navBtn:hover{filter:brightness(.97)}
+.navBtn.left{left:14px}
+.navBtn.right{right:14px}
+
+.heroInner{width:100%;}
+.heroMedia{
+  display:flex;align-items:center;justify-content:center;
+  height:330px;
+  border-radius:14px;
+  background:rgba(255,255,255,.06);
+  overflow:hidden;
+}
+.heroMedia img,.heroMedia video{
+  width:100%;height:100%;
+  object-fit:contain;
+  background:#0b162e;
+}
+.heroMeta{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  padding:12px 4px 0 4px;
+}
+.heroTitle{color:#e5e7eb;font-weight:900;letter-spacing:-.01em}
+.heroSub{color:#cbd5e1;opacity:.9;font-size:12px;margin-top:3px}
+.heroCount{color:#cbd5e1;opacity:.9;font-size:12px}
+
+.progress{position:absolute;left:0;right:0;bottom:0;height:6px;background:rgba(255,255,255,.18)}
+.bar{display:block;height:100%;background:#15b2a9;animation-name:bar;animation-timing-function:linear}
+@keyframes bar{from{width:0}to{width:100%}}
 
 .lists{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
-@media (max-width:900px){.lists{grid-template-columns:1fr}}
-.listCol{background:#0b1e35;border-radius:18px;padding:16px;box-shadow:0 10px 20px rgba(0,0,0,.18)}
-.listCol__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.listCol__head h2{color:#e5e7eb;font-size:16px;margin:0}
-.listCol__count{color:#93c5fd;background:rgba(147,197,253,.15);padding:4px 10px;border-radius:999px;font-size:12px}
+@media (max-width:900px){.lists{grid-template-columns:1fr}.hero{padding:18px 52px 28px 52px}}
+.col{
+  background:#0b1e35;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 12px 26px rgba(0,0,0,.14);
+  padding:16px;
+}
+.colHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.colHead h2{margin:0;color:#e5e7eb;font-size:16px}
+.pill{background:rgba(147,197,253,.15);color:#93c5fd;padding:4px 10px;border-radius:999px;font-size:12px}
 .muted{color:#cbd5e1;opacity:.85;margin:10px 0 0}
 
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media (max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:560px){.cards{grid-template-columns:1fr}}
-.card{cursor:pointer;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:#0a1830;transition:transform .08s ease}
-.card:hover{transform:translateY(-2px)}
-.card__thumb{height:140px;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center}
-.card__thumb img,.card__thumb video{width:100%;height:100%;object-fit:cover}
-.card__noimg{color:#cbd5e1;opacity:.7;font-size:12px}
-.card__body{padding:10px}
-.card__title{margin:0;color:#e5e7eb;font-size:14px}
-.card__meta{display:block;color:#cbd5e1;opacity:.8;font-size:12px;margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.grid{grid-template-columns:1fr}}
 
-.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
-.lightbox__inner{position:relative;background:#0b1e35;border-radius:18px;max-width:min(980px,92vw);max-height:92vh;overflow:hidden;border:1px solid rgba(255,255,255,.12)}
-.lightbox__close{position:absolute;top:10px;right:10px;border:0;background:rgba(255,255,255,.12);color:#fff;width:34px;height:34px;border-radius:10px;cursor:pointer}
-.lightbox__inner img,.lightbox__inner video{display:block;max-width:100%;max-height:82vh;object-fit:contain;background:#0b162e}
-.lightbox__caption{padding:10px 14px;color:#e5e7eb}
+.card{
+  background:linear-gradient(180deg,#0a1830,#081326);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;overflow:hidden;
+  cursor:pointer;
+  transition:transform .10s ease, box-shadow .12s ease;
+}
+.card:hover{transform:translateY(-2px);box-shadow:0 14px 24px rgba(0,0,0,.20)}
+.thumb{position:relative;height:140px;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center}
+.thumb img,.thumb video{width:100%;height:100%;object-fit:cover}
+.noimg{color:#cbd5e1;opacity:.75;font-size:12px}
+.badge{
+  position:absolute;right:10px;bottom:10px;
+  background:rgba(0,0,0,.55);color:#fff;
+  padding:2px 8px;border-radius:999px;font-size:12px;font-weight:800;
+}
+.body{padding:10px}
+.body h3{margin:0;color:#e5e7eb;font-size:14px;font-weight:900}
+.body time{display:block;margin-top:6px;color:#cbd5e1;opacity:.85;font-size:12px}
+
+.empty{color:#cbd5e1;opacity:.9;font-size:14px}
+
+/* ✅ Modal clean + X riktig */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.55);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  z-index:9999;
+}
+.modalBox{
+  width:min(820px,94vw);
+  background:#0b1e35;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 20px 50px rgba(0,0,0,.30);
+  overflow:hidden;
+}
+.modalTop{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+}
+.modalTitle{
+  color:#e5e7eb;font-weight:900;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  padding-right:10px;
+}
+.closeBtn{
+  width:40px;height:40px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  cursor:pointer;
+  display:grid;place-items:center;
+}
+.closeBtn:hover{filter:brightness(1.06)}
+.modalMedia{
+  background:#0b162e;
+  display:flex;align-items:center;justify-content:center;
+  max-height:78vh;
+}
+.modalMedia img,.modalMedia video{
+  width:100%;
+  max-height:78vh;
+  object-fit:contain;
+  display:block;
+}
 `;
