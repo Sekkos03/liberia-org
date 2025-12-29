@@ -46,7 +46,7 @@ function coerceAdvertPath(v: any): string | null {
 
   // "/fil.jpg" uten mapper -> anta adverts-folder
   if (/^\/[^^/]+$/.test(s) && !s.startsWith("/uploads/") && !s.startsWith("/files/") && !s.startsWith("/api/")) {
-    return `/uploads/adverts/${s.slice(1)}`;
+    return `/uploads/media/${s.slice(1)}`;
   }
   return s;
 }
@@ -68,7 +68,7 @@ function normalizeAdvert(a: any): AdvertDTO {
   const id = Number(a?.id ?? a?.advertId ?? a?.advert_id);
 
   const fileName = a?.fileName ?? a?.file_name ?? a?.filename ?? a?.file ?? null;
-  const fromFileName = fileName ? `/uploads/adverts/${String(fileName)}` : undefined;
+  const fromFileName = fileName ? `/uploads/media/${String(fileName)}` : undefined;
 
   // Prøv å finne sti i data (noen miljøer sender dette)
   const candidate =

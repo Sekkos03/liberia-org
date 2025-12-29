@@ -43,7 +43,7 @@ function normAdvertMediaPath(v: any): string {
   const cleaned = raw0.replace(/^\/+/, "");
 
   // bare filnavn uten mapper
-  if (cleaned && !cleaned.includes("/")) return `/uploads/adverts/${cleaned}`;
+  if (cleaned && !cleaned.includes("/")) return `/uploads/media/${cleaned}`;
 
   return raw0.startsWith("/") ? raw0 : `/${raw0}`;
 }
@@ -103,7 +103,7 @@ export function normalizeAdvert(a: any): Advert {
     a?.videoUrl ??
     a?.video_url ??
     a?.video ??
-    (fileName ? `/uploads/adverts/${String(fileName)}` : null) ??
+    (fileName ? `/uploads/media/${String(fileName)}` : null) ??
     a?.url ??
     a?.path ??
     "";

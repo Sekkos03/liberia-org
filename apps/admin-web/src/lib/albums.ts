@@ -114,7 +114,7 @@ const normUrl = (u?: string | null): string | undefined => {
 };
 
 function normalizeAdminItem(it: any): AdminAlbumItemDTO {
-  const fromFileName = it?.fileName ? `/uploads/albums/${String(it.fileName)}` : undefined;
+  const fromFileName = it?.fileName ? `/uploads/media2/${String(it.fileName)}` : undefined;
 
   const url: string =
     normUrl(it?.url) ??

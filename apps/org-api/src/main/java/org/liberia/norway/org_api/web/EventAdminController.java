@@ -179,7 +179,7 @@ public Map<String, String> upload(@RequestPart("file") MultipartFile file,
 
     String stored = java.util.UUID.randomUUID() + "." + ext;
 
-    java.nio.file.Path dir = java.nio.file.Paths.get("uploads", "events");
+    java.nio.file.Path dir = java.nio.file.Paths.get("uploads", "media3");
     java.nio.file.Files.createDirectories(dir);
 
     java.nio.file.Path target = dir.resolve(stored);
