@@ -53,7 +53,7 @@ function partsFromIso(iso?: string | null): { date: string; time: string } {
 async function uploadCover(file: File): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
-  fd.append("folder", "events/covers");
+  fd.append("folder", "media3/covers");
 
   const res = await http.post("/api/admin/events/uploads", fd, {
     headers: { "Content-Type": "multipart/form-data" },

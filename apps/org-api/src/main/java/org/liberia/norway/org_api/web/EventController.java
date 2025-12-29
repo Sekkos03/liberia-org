@@ -1,17 +1,19 @@
 package org.liberia.norway.org_api.web;
 
-import lombok.RequiredArgsConstructor;
-
-import org.liberia.norway.org_api.model.Event;
-import org.liberia.norway.org_api.repository.EventRepository;
-import org.liberia.norway.org_api.web.dto.EventResponse;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+
+import org.liberia.norway.org_api.repository.EventRepository;
+import org.liberia.norway.org_api.web.dto.EventResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api")  // <<— not "/api/**"
