@@ -77,27 +77,27 @@ export default function ContactModal({
             <li className="cRow">
               <span className="cIcon">{phoneSvg}</span>
               <span className="cText">Telefon Number</span>
-              <span className="cValue">{phone}</span>
+              <span className="cValue">+47 966 94 706</span>
             </li>
             <li className="cRow">
               <span className="cIcon">{mailSvg}</span>
               <span className="cText">Mail</span>
-              <span className="cValue">{email}</span>
+              <span className="cValue">Uliberians1847@yahoo.com</span>
             </li>
             <li className="cRow">
               <span className="cIcon">{cardSvg}</span>
               <span className="cText">Account Number</span>
-              <span className="cValue">{account}</span>
+              <span className="cValue">1503.50.51942</span>
             </li>
             <li className="cRow">
               <span className="cIcon">{vippsSvg}</span>
               <span className="cText">VIPPS</span>
-              <span className="cValue">{vipps}</span>
+              <span className="cValue">75356</span>
             </li>
             <li className="cRow">
               <span className="cIcon">{orgSvg}</span>
               <span className="cText">Organization Number</span>
-              <span className="cValue">{org}</span>
+              <span className="cValue">992 826 363</span>
             </li>
           </ul>
 
