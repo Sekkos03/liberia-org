@@ -8,6 +8,9 @@ import {
   deleteAlbumItemAdmin,
   type AdminAlbumItemDTO,
 } from "../../lib/albums";
+// + legg til import
+import { pickImageSrc, toPublicUrl, isVideo } from "../../lib/media";
+
 
 const card = "rounded-xl border border-white/10 bg-[rgba(10,18,36,.65)] p-4 shadow-sm";
 const btn  = "inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold border";
@@ -100,7 +103,11 @@ export default function AdminAlbumDetail() {
                     onClick={() => setPreview(it)}
                     title={it.title ?? ""}
                   >
-                    <img src={it.thumbUrl ?? it.url} alt={it.title ?? ""} className="w-full h-full object-cover" />
+                    <img
+                      src={pickImageSrc(it.thumbUrl ?? null, it.url)}
+                      alt={it.title ?? ""}
+                      className="w-full h-full object-cover"
+                    />
                   </button>
                   <button
                     className={
@@ -138,7 +145,7 @@ export default function AdminAlbumDetail() {
                     onClick={() => setPreview(it)}
                     title={it.title ?? ""}
                   >
-                    <video src={it.url} className="w-full h-full object-cover" />
+                    <video src={toPublicUrl(it.url)} className="w-full h-full object-cover" />
                   </button>
                   <button
                     className={
@@ -162,11 +169,21 @@ export default function AdminAlbumDetail() {
       {preview && (
         <div className="fixed inset-0 bg-black/70 grid place-items-center z-50" onClick={() => setPreview(null)}>
           <div className="bg-[#0c1728] border border-white/15 rounded-xl p-3 max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
-            {/\.mp4|\.webm|\.ogg|\.mkv|\.mov$/i.test(preview.url) ? (
-              <video src={preview.url} controls autoPlay className="max-h-[78vh] max-w-[86vw] rounded-lg" />
-            ) : (
-              <img src={preview.url} alt={preview.title ?? ""} className="max-h-[78vh] max-w-[86vw] rounded-lg" />
-            )}
+            {(preview.kind === "VIDEO" || isVideo(preview.url)) ? (
+  <video
+    src={toPublicUrl(preview.url)}
+    controls
+    autoPlay
+    className="max-h-[78vh] max-w-[86vw] rounded-lg"
+  />
+) : (
+  <img
+    src={toPublicUrl(preview.url)}
+    alt={preview.title ?? ""}
+    className="max-h-[78vh] max-w-[86vw] rounded-lg"
+  />
+)}
+
           </div>
         </div>
       )}

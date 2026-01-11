@@ -133,7 +133,8 @@ function normalizeAdminItem(it: any): AdminAlbumItemDTO {
     title: it?.title ?? null,
     kind: looksVideo ? "VIDEO" : "IMAGE",
     url,
-    thumbUrl: it?.thumbUrl ?? it?.thumbnailUrl ?? it?.thumbnail ?? null,
+    thumbUrl:
+  normUrl(it?.thumbUrl ?? it?.thumbnailUrl ?? it?.thumbnail) ?? null,
     contentType: it?.contentType ?? null,
     sizeBytes: it?.sizeBytes ?? it?.size ?? null,
     createdAt: it?.createdAt ?? null,
