@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { fetchAdverts as loadAdverts, splitByKind, type Advert } from "../lib/adverts";
+import { fetchAdverts as loadAdverts, type Advert } from "../lib/adverts";
 import { toPublicUrl } from "../lib/media";
 
 const SLIDE_IMAGE_MS = 14000;
@@ -12,7 +12,11 @@ function fmtDate(iso?: string | null) {
   if (!iso) return null;
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return null;
-  return new Date(t).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
+  return new Date(t).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
 }
 
 export default function AdvertsPage() {
@@ -23,6 +27,8 @@ export default function AdvertsPage() {
 
   const items = useMemo(() => {
     const list = (q.data ?? []).slice();
+
+    // vis bare aktive/publiserte
     const filtered = list.filter((a) => a.active !== false);
 
     filtered.sort((a, b) => {
@@ -38,7 +44,15 @@ export default function AdvertsPage() {
   const timerRef = useRef<number | null>(null);
 
   const current = items[idx] ?? null;
-  const { images, videos } = useMemo(() => splitByKind(items), [items]);
+
+  const images = useMemo(
+    () => items.filter((a) => (a.mediaKind ?? "IMAGE") === "IMAGE"),
+    [items]
+  );
+  const videos = useMemo(
+    () => items.filter((a) => (a.mediaKind ?? "IMAGE") === "VIDEO"),
+    [items]
+  );
 
   const prev = () => items.length && setIdx((v) => (v - 1 + items.length) % items.length);
   const next = () => items.length && setIdx((v) => (v + 1) % items.length);
@@ -51,7 +65,8 @@ export default function AdvertsPage() {
 
     if (timerRef.current) window.clearTimeout(timerRef.current);
 
-    if (current?.mediaType === "VIDEO") return;
+    const isVideo = current?.mediaKind === "VIDEO";
+    if (isVideo) return;
 
     timerRef.current = window.setTimeout(() => {
       setIdx((v) => (v + 1) % items.length);
@@ -60,7 +75,7 @@ export default function AdvertsPage() {
     return () => {
       if (timerRef.current) window.clearTimeout(timerRef.current);
     };
-  }, [idx, items.length, current?.mediaType]);
+  }, [idx, items.length, current?.mediaKind]);
 
   return (
     <div className="adverts">
@@ -91,7 +106,7 @@ export default function AdvertsPage() {
           </button>
 
           {/* Progress kun for bilder */}
-          {current?.mediaType !== "VIDEO" && items.length > 1 && (
+          {current?.mediaKind !== "VIDEO" && items.length > 1 && (
             <div className="progress">
               <span key={idx} className="bar" style={{ animationDuration: `${SLIDE_IMAGE_MS}ms` }} />
             </div>
@@ -144,10 +159,8 @@ function HeroSlide({
   total: number;
   onVideoEnded?: () => void;
 }) {
-  const isVideo = item.mediaType === "VIDEO";
+  const isVideo = item.mediaKind === "VIDEO";
   const src = item.mediaUrl ? toPublicUrl(item.mediaUrl) : "";
-  const poster = item.posterUrl ? toPublicUrl(item.posterUrl) : undefined;
-
   const published = fmtDate(item.createdAt || item.updatedAt);
 
   return (
@@ -158,7 +171,6 @@ function HeroSlide({
             <video
               key={String(item.id)}
               src={src}
-              poster={poster}
               controls
               playsInline
               autoPlay
@@ -177,21 +189,17 @@ function HeroSlide({
           <div className="heroTitle">{item.title}</div>
           {published && <div className="heroSub">Published: {published}</div>}
         </div>
-        <div className="heroCount">
-          {total > 0 ? `${idx + 1} / ${total}` : null}
-        </div>
+        <div className="heroCount">{total > 0 ? `${idx + 1} / ${total}` : null}</div>
       </div>
     </div>
   );
 }
 
 function Card({ item }: { item: Advert }) {
-  const isVideo = item.mediaType === "VIDEO";
+  const isVideo = item.mediaKind === "VIDEO";
   const media = item.mediaUrl ? toPublicUrl(item.mediaUrl) : "";
-  const poster = item.posterUrl ? toPublicUrl(item.posterUrl) : undefined;
 
   const published = fmtDate(item.createdAt || item.updatedAt);
-
   const [open, setOpen] = useState(false);
 
   // ESC to close
@@ -210,12 +218,12 @@ function Card({ item }: { item: Advert }) {
         <div className="thumb">
           {media ? (
             isVideo ? (
-              <video src={media} poster={poster} muted playsInline />
+              <video src={media} muted playsInline preload="metadata" />
             ) : (
               <img src={media} alt={item.title} />
             )
           ) : (
-            <div className="noimg">No image</div>
+            <div className="noimg">No media</div>
           )}
           {isVideo && <span className="badge">▶</span>}
         </div>
@@ -229,15 +237,9 @@ function Card({ item }: { item: Advert }) {
       {open && (
         <div className="modal" onClick={() => setOpen(false)} role="dialog" aria-modal="true">
           <div className="modalBox" onClick={(e) => e.stopPropagation()}>
-            {/* ✅ CLEAN TOP BAR => X alltid riktig plassert */}
             <div className="modalTop">
               <div className="modalTitle">{item.title}</div>
-              <button
-                className="closeBtn"
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                type="button"
-              >
+              <button className="closeBtn" onClick={() => setOpen(false)} aria-label="Close" type="button">
                 ✕
               </button>
             </div>
@@ -245,7 +247,7 @@ function Card({ item }: { item: Advert }) {
             <div className="modalMedia">
               {media ? (
                 isVideo ? (
-                  <video src={media} poster={poster} controls autoPlay />
+                  <video src={media} controls autoPlay playsInline />
                 ) : (
                   <img src={media} alt={item.title} />
                 )
@@ -253,6 +255,14 @@ function Card({ item }: { item: Advert }) {
                 <div className="empty">No media</div>
               )}
             </div>
+
+            {item.targetUrl ? (
+              <div className="modalActions">
+                <a className="linkBtn" href={item.targetUrl} target="_blank" rel="noreferrer">
+                  Open link
+                </a>
+              </div>
+            ) : null}
           </div>
         </div>
       )}
@@ -264,8 +274,8 @@ const css = `
 .adverts{
   min-height:100vh;
   background:
-    radial-gradient(1000px 600px at 20% 0%, rgba(21,178,169,.12), transparent 60%),
-    radial-gradient(900px 520px at 80% 10%, rgba(147,197,253,.14), transparent 60%),
+    radial-gradient(1000px 600px at 20% 0%, rgba(21,178,169,12), transparent 60%),
+    radial-gradient(900px 520px at 80% 10%, rgba(147,197,253,14), transparent 60%),
     #fff;
 }
 
@@ -278,8 +288,8 @@ const css = `
   position:relative;
   background:#0b1e35;
   border-radius:18px;
-  border:1px solid rgba(255,255,255,.10);
-  box-shadow:0 18px 40px rgba(0,0,0,.18);
+  border:1px solid rgba(255,255,255,10);
+  box-shadow:0 18px 40px rgba(0,0,0,18);
   padding:18px 52px 28px 52px;
   min-height:420px;
   overflow:hidden;
@@ -288,8 +298,8 @@ const css = `
 .navBtn{
   position:absolute;top:50%;transform:translateY(-50%);
   width:42px;height:42px;border-radius:12px;
-  border:0;background:rgba(255,255,255,.92);
-  box-shadow:0 10px 20px rgba(0,0,0,.25);
+  border:0;background:rgba(255,255,255,92);
+  box-shadow:0 10px 20px rgba(0,0,0,25);
   cursor:pointer;font-size:26px;line-height:0;
 }
 .navBtn:hover{filter:brightness(.97)}
@@ -299,113 +309,139 @@ const css = `
 .heroInner{width:100%;}
 .heroMedia{
   display:flex;align-items:center;justify-content:center;
-  height:330px;
   border-radius:14px;
-  background:rgba(255,255,255,.06);
   overflow:hidden;
+  background:rgba(0,0,0,20);
+  height:340px;
 }
-.heroMedia img,.heroMedia video{
-  width:100%;height:100%;
-  object-fit:contain;
-  background:#0b162e;
-}
+.heroMedia img,.heroMedia video{width:100%;height:100%;object-fit:contain;background:#071424}
+
 .heroMeta{
   display:flex;justify-content:space-between;align-items:flex-end;
-  padding:12px 4px 0 4px;
+  margin-top:14px;
+  color:#e2e8f0;
 }
-.heroTitle{color:#e5e7eb;font-weight:900;letter-spacing:-.01em}
-.heroSub{color:#cbd5e1;opacity:.9;font-size:12px;margin-top:3px}
-.heroCount{color:#cbd5e1;opacity:.9;font-size:12px}
+.heroTitle{font-weight:800;font-size:18px}
+.heroSub{opacity:.8;font-size:12px;margin-top:2px}
+.heroCount{opacity:.75;font-size:12px}
 
-.progress{position:absolute;left:0;right:0;bottom:0;height:6px;background:rgba(255,255,255,.18)}
-.bar{display:block;height:100%;background:#15b2a9;animation-name:bar;animation-timing-function:linear}
-@keyframes bar{from{width:0}to{width:100%}}
+.progress{
+  position:absolute;left:0;right:0;bottom:0;height:4px;
+  background:rgba(255,255,255,10);
+}
+.progress .bar{
+  display:block;height:100%;
+  background:rgba(16,185,129,70);
+  animation-name:grow;
+  animation-timing-function:linear;
+  animation-fill-mode:forwards;
+}
+@keyframes grow{from{width:0}to{width:100%}}
 
 .lists{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
-@media (max-width:900px){.lists{grid-template-columns:1fr}.hero{padding:18px 52px 28px 52px}}
+@media (max-width: 900px){.lists{grid-template-columns:1fr}}
+
 .col{
   background:#0b1e35;
   border-radius:18px;
-  border:1px solid rgba(255,255,255,.08);
-  box-shadow:0 12px 26px rgba(0,0,0,.14);
+  border:1px solid rgba(255,255,255,10);
   padding:16px;
+  color:#e2e8f0;
 }
 .colHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.colHead h2{margin:0;color:#e5e7eb;font-size:16px}
-.pill{background:rgba(147,197,253,.15);color:#93c5fd;padding:4px 10px;border-radius:999px;font-size:12px}
-.muted{color:#cbd5e1;opacity:.85;margin:10px 0 0}
+.colHead h2{margin:0;font-size:16px}
+.pill{
+  font-size:12px;
+  padding:4px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,12);
+  border:1px solid rgba(255,255,255,14);
+}
+.muted{opacity:.8;margin:8px 0 0}
 
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media (max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:560px){.grid{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:12px}
+@media (max-width: 520px){.grid{grid-template-columns:1fr}}
 
 .card{
-  background:linear-gradient(180deg,#0a1830,#081326);
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:16px;overflow:hidden;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,10);
+  background:rgba(255,255,255,6);
+  overflow:hidden;
   cursor:pointer;
-  transition:transform .10s ease, box-shadow .12s ease;
 }
-.card:hover{transform:translateY(-2px);box-shadow:0 14px 24px rgba(0,0,0,.20)}
-.thumb{position:relative;height:140px;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center}
+.thumb{
+  position:relative;
+  height:150px;
+  background:rgba(0,0,0,25);
+}
 .thumb img,.thumb video{width:100%;height:100%;object-fit:cover}
-.noimg{color:#cbd5e1;opacity:.75;font-size:12px}
+.noimg{display:grid;place-items:center;height:100%;opacity:.7;font-size:12px}
 .badge{
-  position:absolute;right:10px;bottom:10px;
-  background:rgba(0,0,0,.55);color:#fff;
-  padding:2px 8px;border-radius:999px;font-size:12px;font-weight:800;
+  position:absolute;right:10px;top:10px;
+  width:26px;height:26px;border-radius:999px;
+  display:grid;place-items:center;
+  background:rgba(15,23,42,75);
+  border:1px solid rgba(255,255,255,16);
+  font-size:12px;
 }
-.body{padding:10px}
-.body h3{margin:0;color:#e5e7eb;font-size:14px;font-weight:900}
-.body time{display:block;margin-top:6px;color:#cbd5e1;opacity:.85;font-size:12px}
+.body{padding:10px 12px}
+.body h3{margin:0;font-size:14px}
+.body time{display:block;margin-top:6px;font-size:12px;opacity:.8}
 
-.empty{color:#cbd5e1;opacity:.9;font-size:14px}
+.empty{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  opacity:.8;
+}
 
-/* ✅ Modal clean + X riktig */
 .modal{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.55);
-  display:flex;align-items:center;justify-content:center;
-  padding:20px;
-  z-index:9999;
+  position:fixed;inset:0;z-index:50;
+  background:rgba(0,0,0,55);
+  display:grid;place-items:center;
+  padding:18px;
 }
 .modalBox{
-  width:min(820px,94vw);
+  width:min(980px, 96vw);
   background:#0b1e35;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 20px 50px rgba(0,0,0,.30);
+  border:1px solid rgba(255,255,255,12);
+  border-radius:18px;
   overflow:hidden;
 }
 .modalTop{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 14px;
-  border-bottom:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
+  border-bottom:1px solid rgba(255,255,255,10);
 }
-.modalTitle{
-  color:#e5e7eb;font-weight:900;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  padding-right:10px;
-}
+.modalTitle{color:#e2e8f0;font-weight:800}
 .closeBtn{
-  width:40px;height:40px;border-radius:12px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.08);
-  color:#fff;
+  border:1px solid rgba(255,255,255,14);
+  background:rgba(255,255,255,8);
+  color:#e2e8f0;
+  border-radius:10px;
+  padding:6px 10px;
   cursor:pointer;
-  display:grid;place-items:center;
 }
-.closeBtn:hover{filter:brightness(1.06)}
+.closeBtn:hover{filter:brightness(.98)}
 .modalMedia{
-  background:#0b162e;
-  display:flex;align-items:center;justify-content:center;
-  max-height:78vh;
+  height:min(70vh, 560px);
+  background:#071424;
 }
-.modalMedia img,.modalMedia video{
-  width:100%;
-  max-height:78vh;
-  object-fit:contain;
-  display:block;
+.modalMedia img,.modalMedia video{width:100%;height:100%;object-fit:contain}
+.modalActions{
+  padding:12px 14px;
+  display:flex;
+  justify-content:flex-end;
 }
+.linkBtn{
+  display:inline-block;
+  padding:8px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,14);
+  background:rgba(16,185,129,18);
+  color:#d1fae5;
+  text-decoration:none;
+}
+.linkBtn:hover{filter:brightness(.98)}
 `;

@@ -1,4 +1,3 @@
-
 package org.liberia.norway.org_api;
 
 import org.springframework.boot.SpringApplication;
