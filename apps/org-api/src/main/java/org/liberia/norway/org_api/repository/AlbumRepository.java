@@ -31,6 +31,8 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
     @Query(value = "SELECT * FROM albums WHERE slug = :slug AND is_published = true LIMIT 1", nativeQuery = true)
     Optional<Album> findPublishedBySlug(@Param("slug") String slug);
     Optional<Album> findById(Long id);
+    
+    boolean existsBySlug(String slug);
 
 }
 

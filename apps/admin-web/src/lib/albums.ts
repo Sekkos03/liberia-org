@@ -4,7 +4,7 @@ import { http, type Page } from "./events";
 /* ----------------------------- Album-typer ----------------------------- */
 
 export type AlbumUpsert = {
-  slug: string;
+  slug?: string; // backend lar denne være valgfri ved create
   title: string;
   description?: string | null;
   coverPhotoId?: number | null;
@@ -32,6 +32,17 @@ function unwrap<T = any>(data: any, embeddedKey?: string): T[] {
     return data._embedded[embeddedKey] as T[];
   }
   return [];
+}
+
+function slugify(input: string): string {
+  const s = (input || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // diacritics
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return s || "album";
 }
 
 function normalizeAlbum(a: any): AlbumDTO {
@@ -62,23 +73,46 @@ export async function listAlbumsAdmin(): Promise<Page<AlbumDTO> | AlbumDTO[]> {
 }
 
 export async function createAlbum(body: AlbumUpsert): Promise<AlbumDTO> {
-  const res = await http.post(`/api/admin/albums`, body);
-  return normalizeAlbum(res.data);
-}
+  // Backend krever title; slug er valgfri – generer hvis tom/undefined
+  const title = (body.title || "").trim();
+  if (!title) throw new Error("Title is required");
 
-export async function setAlbumPublished(id: number, value: boolean): Promise<AlbumDTO> {
-  // enkelte backends bruker "isPublished" i body
-  const res = await http.put(`/api/admin/albums/${id}`, { isPublished: value });
+  const slug = (body.slug || "").trim();
+  const payload: any = {
+    title,
+    description: body.description ?? null,
+    // send published hvis satt
+    ...(typeof body.published === "boolean" ? { published: body.published } : {}),
+    // bare send slug om den er satt, ellers la backend generere fra title
+    ...(slug ? { slug: slugify(slug) } : {}),
+  };
+
+  const res = await http.post(`/api/admin/albums`, payload);
   return normalizeAlbum(res.data);
 }
 
 export async function updateAlbum(id: number, body: Partial<AlbumUpsert>): Promise<AlbumDTO> {
-  const apiBody: any = { ...body };
-  if (Object.prototype.hasOwnProperty.call(apiBody, "published")) {
-    apiBody.isPublished = apiBody.published;
-    delete apiBody.published;
+  const payload: any = { ...body };
+
+  if (typeof payload.title === "string") payload.title = payload.title.trim();
+
+  if (typeof payload.slug === "string") {
+    const s = payload.slug.trim();
+    payload.slug = s ? slugify(s) : undefined;
   }
-  const res = await http.put(`/api/admin/albums/${id}`, apiBody);
+
+  // Backend støtter published/isPublished via @JsonAlias – send published
+  if (Object.prototype.hasOwnProperty.call(payload, "published")) {
+    payload.published = Boolean(payload.published);
+    delete payload.isPublished;
+  }
+
+  const res = await http.put(`/api/admin/albums/${id}`, payload);
+  return normalizeAlbum(res.data);
+}
+
+export async function setAlbumPublished(id: number, value: boolean): Promise<AlbumDTO> {
+  const res = await http.put(`/api/admin/albums/${id}`, { published: value });
   return normalizeAlbum(res.data);
 }
 
@@ -104,7 +138,7 @@ export type AdminAlbumItemDTO = {
   createdAt?: string | null;
 };
 
-const videoExt = /\.(mp4|webm|ogg|mkv|mov)$/i;
+const videoExt = /\.(mp4|webm|ogg|mkv|mov|avi)$/i;
 
 const normUrl = (u?: string | null): string | undefined => {
   if (!u) return undefined;
@@ -126,15 +160,15 @@ function normalizeAdminItem(it: any): AdminAlbumItemDTO {
     "";
 
   const ct = String(it?.contentType ?? "");
-  const looksVideo = ct.toLowerCase().startsWith("video/") || videoExt.test(url) || !!it?.videoUrl;
+  const looksVideo =
+    ct.toLowerCase().startsWith("video/") || videoExt.test(url) || !!it?.videoUrl || it?.kind === "VIDEO";
 
   return {
     id: Number(it?.id ?? it?.itemId),
     title: it?.title ?? null,
     kind: looksVideo ? "VIDEO" : "IMAGE",
     url,
-    thumbUrl:
-  normUrl(it?.thumbUrl ?? it?.thumbnailUrl ?? it?.thumbnail) ?? null,
+    thumbUrl: normUrl(it?.thumbUrl ?? it?.thumbnailUrl ?? it?.thumbnail) ?? null,
     contentType: it?.contentType ?? null,
     sizeBytes: it?.sizeBytes ?? it?.size ?? null,
     createdAt: it?.createdAt ?? null,
@@ -148,16 +182,10 @@ export async function listAlbumItemsAdmin(albumId: number): Promise<AdminAlbumIt
 
 export async function uploadAlbumItemsAdmin(albumId: number, files: File[]): Promise<AdminAlbumItemDTO[]> {
   const fd = new FormData();
-  files.forEach((f) => {
-    // støtt både "files" og "file" i tilfelle backend forventer det
-    fd.append("files", f);
-    fd.append("file", f);
-  });
-
+  files.forEach((f) => fd.append("files", f)); // backend forventer RequestPart("files")
   const res = await http.post(`/api/admin/albums/${albumId}/items`, fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-
   return unwrap(res.data, "items").map(normalizeAdminItem);
 }
 
