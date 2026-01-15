@@ -12,6 +12,17 @@ import {
   type MemberDTO,
   type MembershipApplicationDTO,
 } from "../../lib/membership";
+import { Users, UserPlus, Eye, Pencil, Trash2, X, Check, XCircle, RotateCcw, Clock, Mail, Phone, MapPin, CreditCard } from "lucide-react";
+
+/* ---------- Style constants ---------- */
+const btnBase = "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 active:scale-[0.98]";
+const btnPrimary = `${btnBase} bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5`;
+const btnGhost = `${btnBase} border border-white/15 bg-white/5 hover:bg-white/10 text-white/90 px-3 py-2`;
+const btnSuccess = `${btnBase} border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 px-3 py-2`;
+const btnDanger = `${btnBase} bg-red-600/90 hover:bg-red-600 text-white px-3 py-2`;
+const btnSmall = "px-2.5 py-1.5 text-sm";
+const inputBase = "w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 placeholder:text-white/40";
+const cardBase = "rounded-2xl border border-white/10 bg-[rgba(10,18,36,0.5)]";
 
 type AppTab = "PENDING" | "REJECTED" | "ACCEPTED";
 
@@ -25,8 +36,8 @@ function toDate(input: string | number | null | undefined) {
 
 function fmtDate(input: string | number | null | undefined) {
   const d = toDate(input);
-  if (!d || Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleString(undefined, {
+  if (!d || Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -97,191 +108,279 @@ export default function AdminMembership() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-4xl font-extrabold">Membership (Admin)</h1>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-extrabold">Membership</h1>
+        <p className="text-white/60 text-sm mt-1">Manage applications and members</p>
+      </div>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Applications</h2>
+      {/* Applications Section */}
+      <section className={`${cardBase} overflow-hidden`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-white/10">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Clock size={18} className="text-white/60" />
+            Applications
+          </h2>
 
-          <div className="flex gap-2">
-            <TabButton active={tab === "PENDING"} onClick={() => setTab("PENDING")}>
-              Pending
-            </TabButton>
-            <TabButton active={tab === "REJECTED"} onClick={() => setTab("REJECTED")}>
-              Rejected
-            </TabButton>
-            <TabButton active={tab === "ACCEPTED"} onClick={() => setTab("ACCEPTED")}>
-              Accepted
-            </TabButton>
+          <div className="flex gap-1 p-1 rounded-xl bg-white/5">
+            {(["PENDING", "REJECTED", "ACCEPTED"] as AppTab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  tab === t
+                    ? "bg-white/10 text-white"
+                    : "text-white/60 hover:text-white/80"
+                }`}
+              >
+                {t.charAt(0) + t.slice(1).toLowerCase()}
+              </button>
+            ))}
           </div>
         </div>
 
-        {qApps.isLoading ? (
-          <div>Loading applications…</div>
-        ) : qApps.isError ? (
-          <div className="text-red-500">Could not load applications</div>
-        ) : apps.length === 0 ? (
-          <div className="opacity-70">No applications in this category.</div>
-        ) : (
-          <ul className="space-y-2">
-            {apps.map((a) => (
-              <li
-                key={a.id}
-                className="rounded-xl border border-white/10 p-3 flex items-start justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium truncate">
-                    {a.firstName} {a.lastName}
-                    <span className="text-sm opacity-60"> • {fmtDate(a.createdAt)}</span>
-                  </div>
+        <div className="p-4">
+          {qApps.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-white/20 border-t-indigo-500 rounded-full animate-spin" />
+            </div>
+          ) : qApps.isError ? (
+            <div className="text-red-400 text-center py-4">Could not load applications</div>
+          ) : apps.length === 0 ? (
+            <div className="text-center py-8 text-white/50">
+              No applications in this category
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {apps.map((a) => (
+                <div
+                  key={a.id}
+                  className="rounded-xl border border-white/10 bg-white/[0.02] p-4"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold">
+                          {a.firstName} {a.lastName}
+                        </span>
+                        <span className="text-sm text-white/50">
+                          • {fmtDate(a.createdAt)}
+                        </span>
+                      </div>
 
-                  <div className="text-sm opacity-80 truncate">
-                    {a.email ?? "–"} {a.phone ? ` • ${a.phone}` : ""} {a.city ? ` • ${a.city}` : ""}
-                  </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-white/70">
+                        {a.email && (
+                          <span className="flex items-center gap-1">
+                            <Mail size={12} className="text-white/50" />
+                            {a.email}
+                          </span>
+                        )}
+                        {a.phone && (
+                          <span className="flex items-center gap-1">
+                            <Phone size={12} className="text-white/50" />
+                            {a.phone}
+                          </span>
+                        )}
+                        {a.city && (
+                          <span className="flex items-center gap-1">
+                            <MapPin size={12} className="text-white/50" />
+                            {a.city}
+                          </span>
+                        )}
+                      </div>
 
-                  <div className="text-sm mt-1">
-                    <span className="opacity-70">Vipps ref:</span>{" "}
-                    <span className="font-semibold">{a.vippsReference ?? "–"}</span>{" "}
-                    <span className="opacity-60">({a.vippsAmountNok ?? "–"} NOK)</span>
-                  </div>
+                      <div className="flex items-center gap-2 mt-2 text-sm">
+                        <CreditCard size={12} className="text-white/50" />
+                        <span className="text-white/70">Vipps ref:</span>
+                        <span className="font-semibold">{a.vippsReference ?? "—"}</span>
+                        <span className="text-white/50">({a.vippsAmountNok ?? "—"} NOK)</span>
+                      </div>
 
-                  {a.status === "REJECTED" && a.deleteAt && (
-                    <div className="text-xs opacity-70 mt-1">
-                      Auto-deletes: {fmtDate(a.deleteAt)}
+                      {a.status === "REJECTED" && a.deleteAt && (
+                        <div className="text-xs text-white/50 mt-2">
+                          Auto-deletes: {fmtDate(a.deleteAt)}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="flex gap-2 shrink-0">
-                  {a.status === "PENDING" ? (
-                    <>
-                      <button
-                        className="rounded-lg px-3 py-1 border border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/10"
-                        onClick={() => mAccept.mutate(a.id)}
-                        disabled={mAccept.isPending}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {a.status === "PENDING" ? (
+                        <>
+                          <button
+                            className={`${btnSuccess} ${btnSmall}`}
+                            onClick={() => mAccept.mutate(a.id)}
+                            disabled={mAccept.isPending}
+                          >
+                            <Check size={14} />
+                            <span className="hidden sm:inline">Accept</span>
+                          </button>
+                          <button
+                            className={`${btnDanger} ${btnSmall}`}
+                            onClick={() => {
+                              setRejectDays(7);
+                              setRejecting(a);
+                            }}
+                            disabled={mReject.isPending}
+                          >
+                            <XCircle size={14} />
+                            <span className="hidden sm:inline">Reject</span>
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className={`${btnGhost} ${btnSmall}`}
+                          onClick={() => mBackToPending.mutate(a.id)}
+                          disabled={mBackToPending.isPending}
+                        >
+                          <RotateCcw size={14} />
+                          <span>Undo</span>
+                        </button>
+                      )}
+                      <span
+                        className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                          a.status === "ACCEPTED"
+                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                            : a.status === "REJECTED"
+                            ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                            : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                        }`}
                       >
-                        Accept
-                      </button>
-
-                      <button
-                        className="rounded-lg px-3 py-1 border border-rose-500/40 text-rose-200 hover:bg-rose-500/10"
-                        onClick={() => {
-                          setRejectDays(7);
-                          setRejecting(a);
-                        }}
-                        disabled={mReject.isPending}
-                      >
-                        Reject
-                      </button>
-
-                      <span className="rounded-md px-2 py-1 text-sm border border-white/10 opacity-80">
                         {a.status}
                       </span>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
-                        onClick={() => mBackToPending.mutate(a.id)}
-                        disabled={mBackToPending.isPending}
-                      >
-                        Angre
-                      </button>
-
-                      <span className="rounded-md px-2 py-1 text-sm border border-white/10 opacity-80">
-                        {a.status}
-                      </span>
-                    </>
-                  )}
+                    </div>
+                  </div>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Members</h2>
-          <button
-            className="rounded-lg px-3 py-2 border border-white/15 hover:bg-white/5"
-            onClick={() => setEditing({})}
-          >
-            New member (manual)
+      {/* Members Section */}
+      <section className={`${cardBase} overflow-hidden`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-white/10">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Users size={18} className="text-white/60" />
+            Members
+            <span className="text-sm text-white/50 font-normal">({members.length})</span>
+          </h2>
+          <button className={btnGhost} onClick={() => setEditing({})}>
+            <UserPlus size={16} />
+            <span>Add member</span>
           </button>
         </div>
 
-        {qMembers.isLoading ? (
-          <div>Loading members…</div>
-        ) : qMembers.isError ? (
-          <div className="text-red-500">Could not load members</div>
-        ) : members.length === 0 ? (
-          <div className="opacity-70">No members found.</div>
-        ) : (
-          <ul className="space-y-2">
-            {members.map((m) => (
-              <li
-                key={m.id}
-                className="rounded-xl border border-white/10 p-3 flex items-center justify-between gap-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium truncate">
-                    {m.firstName} {m.lastName}
-                    <span className="text-sm opacity-60"> • Joined {fmtDate(m.createdAt)}</span>
-                  </div>
-                  <div className="text-sm opacity-70 truncate">
-                    {m.email} {m.phone ? ` • ${m.phone}` : ""} {m.city ? ` • ${m.city}` : ""}
-                  </div>
-                  {m.vippsReference && (
-                    <div className="text-xs opacity-60 mt-1">
-                      Vipps: {m.vippsReference} ({m.vippsAmountNok} NOK)
+        <div className="p-4">
+          {qMembers.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-white/20 border-t-indigo-500 rounded-full animate-spin" />
+            </div>
+          ) : qMembers.isError ? (
+            <div className="text-red-400 text-center py-4">Could not load members</div>
+          ) : members.length === 0 ? (
+            <div className="text-center py-8">
+              <Users size={32} className="mx-auto text-white/20 mb-2" />
+              <p className="text-white/50">No members yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {members.map((m) => (
+                <div
+                  key={m.id}
+                  className="rounded-xl border border-white/10 bg-white/[0.02] p-4"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold">
+                          {m.firstName} {m.lastName}
+                        </span>
+                        <span className="text-sm text-white/50">
+                          • Joined {fmtDate(m.createdAt)}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-white/70">
+                        {m.email && (
+                          <span className="flex items-center gap-1">
+                            <Mail size={12} className="text-white/50" />
+                            {m.email}
+                          </span>
+                        )}
+                        {m.phone && (
+                          <span className="flex items-center gap-1">
+                            <Phone size={12} className="text-white/50" />
+                            {m.phone}
+                          </span>
+                        )}
+                        {m.city && (
+                          <span className="flex items-center gap-1">
+                            <MapPin size={12} className="text-white/50" />
+                            {m.city}
+                          </span>
+                        )}
+                      </div>
+
+                      {m.vippsReference && (
+                        <div className="flex items-center gap-2 mt-2 text-sm">
+                          <CreditCard size={12} className="text-white/50" />
+                          <span className="text-white/70">Vipps:</span>
+                          <span className="font-mono text-xs">#{m.vippsReference}</span>
+                          <span className="text-white/50">({m.vippsAmountNok ?? "—"} NOK)</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        className={`${btnGhost} ${btnSmall}`}
+                        onClick={() => setViewing(m)}
+                      >
+                        <Eye size={14} />
+                        <span className="hidden sm:inline">View</span>
+                      </button>
+                      <button
+                        className={`${btnGhost} ${btnSmall}`}
+                        onClick={() => setEditing(m)}
+                      >
+                        <Pencil size={14} />
+                        <span className="hidden sm:inline">Edit</span>
+                      </button>
+                      <button
+                        className={`${btnDanger} ${btnSmall}`}
+                        onClick={() => {
+                          if (confirm(`Delete member "${m.firstName} ${m.lastName}"?`)) {
+                            mDelete.mutate(m.id!);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    className="rounded-lg px-3 py-1 border border-blue-500/40 text-blue-300 hover:bg-blue-500/10"
-                    onClick={() => setViewing(m)}
-                  >
-                    View
-                  </button>
-                  <button
-                    className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
-                    onClick={() => setEditing(m)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="rounded-lg px-3 py-1 border border-red-500/40 text-red-300 hover:bg-red-500/10"
-                    onClick={() => {
-                      if (confirm(`Delete member ${m.firstName} ${m.lastName}?`)) {
-                        mDelete.mutate(m.id!);
-                      }
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </section>
+
+      {/* Modals */}
+      {viewing && <ViewMemberModal member={viewing} onClose={() => setViewing(null)} />}
 
       {editing && (
         <EditMemberModal
           initial={editing}
           onClose={() => setEditing(null)}
           onSave={(data) => {
-            if (editing.id) mUpdate.mutate({ id: editing.id, data });
-            else mCreate.mutate(data);
+            if (data.id) {
+              mUpdate.mutate({ id: data.id, data });
+            } else {
+              mCreate.mutate(data);
+            }
             setEditing(null);
           }}
         />
-      )}
-
-      {viewing && (
-        <ViewMemberModal member={viewing} onClose={() => setViewing(null)} />
       )}
 
       {rejecting && (
@@ -300,40 +399,34 @@ export default function AdminMembership() {
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  children,
+/* ---------- View Member Modal ---------- */
+function ViewMemberModal({
+  member,
+  onClose,
 }: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
+  member: MemberDTO;
+  onClose: () => void;
 }) {
   return (
-    <button
-      onClick={onClick}
-      className={
-        "rounded-lg px-3 py-2 border " +
-        (active ? "border-white/30 bg-white/10" : "border-white/15 hover:bg-white/5")
-      }
+    <div
+      className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+      onClick={onClose}
     >
-      {children}
-    </button>
-  );
-}
-
-function ViewMemberModal({ member, onClose }: { member: MemberDTO; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="w-full max-w-2xl rounded-2xl border border-white/15 bg-black p-4 space-y-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold">Member Details</h3>
-          <button onClick={onClose} className="opacity-70 hover:opacity-100">
-            ✕
+      <div
+        className="w-full max-w-2xl rounded-2xl bg-[#0b1527] border border-white/15 shadow-2xl my-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-white/10">
+          <h3 className="text-xl font-bold">Member Details</h3>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
           <ViewField label="First name" value={member.firstName} />
           <ViewField label="Last name" value={member.lastName} />
           <ViewField label="Date of birth" value={member.dateOfBirth} />
@@ -341,7 +434,7 @@ function ViewMemberModal({ member, onClose }: { member: MemberDTO; onClose: () =
           <ViewField label="Address" value={member.address} />
           <ViewField label="Post code" value={member.postCode} />
           <ViewField label="City" value={member.city} />
-          <ViewField label="Phone number" value={member.phone} />
+          <ViewField label="Phone" value={member.phone} />
           <ViewField label="Email" value={member.email} />
           <ViewField label="Occupation" value={member.occupation} />
           <ViewField label="Vipps Reference" value={member.vippsReference} />
@@ -349,11 +442,8 @@ function ViewMemberModal({ member, onClose }: { member: MemberDTO; onClose: () =
           <ViewField label="Joined" value={member.createdAt ? fmtDate(member.createdAt) : undefined} />
         </div>
 
-        <div className="flex justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-lg px-3 py-2 border border-white/15 hover:bg-white/5"
-          >
+        <div className="flex justify-end p-5 border-t border-white/10">
+          <button className={btnGhost} onClick={onClose}>
             Close
           </button>
         </div>
@@ -365,12 +455,13 @@ function ViewMemberModal({ member, onClose }: { member: MemberDTO; onClose: () =
 function ViewField({ label, value }: { label: string; value?: string | number | null }) {
   return (
     <div className="space-y-1">
-      <div className="text-sm opacity-60">{label}</div>
-      <div className="font-medium">{value || "–"}</div>
+      <div className="text-sm text-white/50">{label}</div>
+      <div className="font-medium">{value || "—"}</div>
     </div>
   );
 }
 
+/* ---------- Reject Modal ---------- */
 function RejectModal({
   app,
   days,
@@ -385,52 +476,60 @@ function RejectModal({
   onConfirm: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="w-full max-w-lg rounded-2xl border border-white/15 bg-black p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold">Reject application</h3>
-          <button onClick={onClose} className="opacity-70 hover:opacity-100">
-            ✕
-          </button>
-        </div>
-
-        <div className="text-sm opacity-80">
-          <div className="font-semibold">
-            {app.firstName} {app.lastName}
-          </div>
-          <div>{app.email}</div>
-          <div className="mt-1">
-            Vipps ref: <b>{app.vippsReference}</b> ({app.vippsAmountNok} NOK)
-          </div>
-        </div>
-
-        <label className="block">
-          <div className="mb-1 opacity-80 text-sm">Keep in rejected list for (days)</div>
-          <select
-            className="w-full rounded-xl bg-transparent border border-white/15 px-3 py-2 outline-none"
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-          >
-            {[1, 3, 7, 14, 30, 60, 90].map((d) => (
-              <option key={d} value={d} className="bg-black">
-                {d} days
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="flex items-center justify-end gap-2">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-[#0b1527] border border-white/15 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-white/10">
+          <h3 className="text-xl font-bold">Reject Application</h3>
           <button
             onClick={onClose}
-            className="rounded-lg px-3 py-2 border border-white/15 hover:bg-white/5"
+            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition"
           >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+            <div className="font-semibold">
+              {app.firstName} {app.lastName}
+            </div>
+            <div className="text-sm text-white/70 mt-1">{app.email}</div>
+            <div className="text-sm mt-2">
+              <span className="text-white/50">Vipps ref:</span>{" "}
+              <span className="font-semibold">{app.vippsReference}</span>{" "}
+              <span className="text-white/50">({app.vippsAmountNok} NOK)</span>
+            </div>
+          </div>
+
+          <label className="block space-y-1.5">
+            <span className="text-sm text-white/70">Keep in rejected list for</span>
+            <select
+              className={inputBase}
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+            >
+              {[1, 3, 7, 14, 30, 60, 90].map((d) => (
+                <option key={d} value={d} className="bg-[#0b1527]">
+                  {d} days
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 p-5 border-t border-white/10">
+          <button className={btnGhost} onClick={onClose}>
             Cancel
           </button>
-          <button
-            onClick={onConfirm}
-            className="rounded-lg px-3 py-2 border border-rose-500/40 text-rose-200 hover:bg-rose-500/10"
-          >
-            Reject
+          <button className={btnDanger} onClick={onConfirm}>
+            <XCircle size={16} />
+            <span>Reject</span>
           </button>
         </div>
       </div>
@@ -438,6 +537,7 @@ function RejectModal({
   );
 }
 
+/* ---------- Edit Member Modal ---------- */
 function EditMemberModal({
   initial,
   onClose,
@@ -472,57 +572,49 @@ function EditMemberModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="w-full max-w-2xl rounded-2xl border border-white/15 bg-black p-4 space-y-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold">{m.id ? "Edit member" : "New member"}</h3>
-          <button onClick={onClose} className="opacity-70 hover:opacity-100">
-            ✕
+    <div
+      className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-2xl bg-[#0b1527] border border-white/15 shadow-2xl my-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-white/10">
+          <h3 className="text-xl font-bold">{m.id ? "Edit Member" : "New Member"}</h3>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
           <Field label="First name *" value={m.firstName ?? ""} onChange={set("firstName")} />
           <Field label="Last name *" value={m.lastName ?? ""} onChange={set("lastName")} />
-          <Field
-            label="Date of birth"
-            type="date"
-            value={m.dateOfBirth ?? ""}
-            onChange={set("dateOfBirth")}
-          />
+          <Field label="Date of birth" type="date" value={m.dateOfBirth ?? ""} onChange={set("dateOfBirth")} />
           <Field label="Personal number" value={m.personalNr ?? ""} onChange={set("personalNr")} />
           <Field label="Address" value={m.address ?? ""} onChange={set("address")} />
           <Field label="Post code" value={m.postCode ?? ""} onChange={set("postCode")} />
           <Field label="City" value={m.city ?? ""} onChange={set("city")} />
-          <Field label="Phone number" value={m.phone ?? ""} onChange={set("phone")} />
+          <Field label="Phone" value={m.phone ?? ""} onChange={set("phone")} />
           <Field label="Email *" type="email" value={m.email ?? ""} onChange={set("email")} />
           <Field label="Occupation" value={m.occupation ?? ""} onChange={set("occupation")} />
-          <Field
-            label="Vipps Reference"
-            value={m.vippsReference ?? ""}
-            onChange={set("vippsReference")}
-          />
-          <Field
-            label="Vipps Amount (NOK)"
-            type="number"
-            value={m.vippsAmountNok?.toString() ?? ""}
-            onChange={setNumber("vippsAmountNok")}
-          />
+          <Field label="Vipps Reference" value={m.vippsReference ?? ""} onChange={set("vippsReference")} />
+          <Field label="Vipps Amount (NOK)" type="number" value={m.vippsAmountNok?.toString() ?? ""} onChange={setNumber("vippsAmountNok")} />
         </div>
 
-        <div className="flex items-center justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-lg px-3 py-2 border border-white/15 hover:bg-white/5"
-          >
+        <div className="flex items-center justify-end gap-3 p-5 border-t border-white/10">
+          <button className={btnGhost} onClick={onClose}>
             Cancel
           </button>
           <button
+            className={btnPrimary}
             onClick={() => onSave(m)}
-            className="rounded-lg px-3 py-2 border border-white/15 hover:bg-white/5"
             disabled={!m.firstName || !m.lastName || !m.email}
           >
-            Save
+            {m.id ? "Save changes" : "Create member"}
           </button>
         </div>
       </div>
@@ -542,14 +634,9 @@ function Field({
   type?: string;
 }) {
   return (
-    <label className="block">
-      <div className="mb-1 opacity-80 text-sm">{label}</div>
-      <input
-        className="w-full rounded-xl bg-transparent border border-white/15 px-3 py-2 outline-none focus:border-violet-500"
-        type={type}
-        value={value ?? ""}
-        onChange={onChange}
-      />
+    <label className="block space-y-1.5">
+      <span className="text-sm text-white/70">{label}</span>
+      <input className={inputBase} type={type} value={value ?? ""} onChange={onChange} />
     </label>
   );
 }

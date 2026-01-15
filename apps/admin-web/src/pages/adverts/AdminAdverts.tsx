@@ -10,8 +10,18 @@ import {
 } from "../../lib/advert";
 import { useState } from "react";
 import { toPublicUrl } from "../../lib/media";
+import { Megaphone, Plus, Pencil, Trash2, Eye, EyeOff, X, Video, Image, Link2, Clock, Calendar } from "lucide-react";
 
-/* ---------- helpers dd/mm/yyyy + HH:mm:ss ---------- */
+/* ---------- Style constants ---------- */
+const btnBase = "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 active:scale-[0.98]";
+const btnPrimary = `${btnBase} bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5`;
+const btnGhost = `${btnBase} border border-white/15 bg-white/5 hover:bg-white/10 text-white/90 px-3 py-2`;
+const btnDanger = `${btnBase} bg-red-600/90 hover:bg-red-600 text-white px-3 py-2`;
+const btnSmall = "px-2.5 py-1.5 text-sm";
+const inputBase = "w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 placeholder:text-white/40";
+const cardBase = "rounded-2xl border border-white/10 bg-[rgba(10,18,36,0.5)]";
+
+/* ---------- Date helpers ---------- */
 function isoFromLocalParts(dateDDMMYYYY: string, timeHHmmss: string): string | null {
   if (!dateDDMMYYYY) return null;
   const [dd, mm, yyyy] = dateDDMMYYYY.split("/").map((x) => Number(x));
@@ -50,8 +60,18 @@ function addDurationIso(startIso: string, preset: "" | "1d" | "7d" | "30d"): str
   const days = preset === "1d" ? 1 : preset === "7d" ? 7 : preset === "30d" ? 30 : 0;
   if (!days) return "";
   d.setUTCDate(d.getUTCDate() + days);
-  // behold "Z" og dropp ms
   return d.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+function formatDateTime(iso?: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function AdminAdverts() {
@@ -91,120 +111,186 @@ export default function AdminAdverts() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["adminAdverts"] }),
   });
 
-  function togglePublished(a: AdvertDTO) {
-    mPublish.mutate({ id: a.id, value: !a.active });
+  if (q.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-indigo-500 rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  if (q.isLoading) return <div>Laster…</div>;
-  if (q.isError) return <div className="text-red-500">Feil: {(q.error as Error).message}</div>;
+  if (q.isError) {
+    return (
+      <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+        Failed to load adverts. Please try again.
+      </div>
+    );
+  }
 
   const items = q.data?.content ?? [];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-5xl font-extrabold">Adverts (Admin)</h1>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold">Adverts</h1>
+          <p className="text-white/60 text-sm mt-1">Manage promotional content and advertisements</p>
+        </div>
         <button
           onClick={() => {
             setEditing(null);
             setOpen(true);
           }}
-          className="rounded-lg bg-white/5 px-4 py-2 hover:bg-white/10 border border-white/15"
+          className={btnPrimary}
         >
-          Ny annonse
+          <Plus size={18} />
+          <span>New advert</span>
         </button>
       </div>
 
-      <ul className="space-y-4">
-        {items.map((a) => (
-          <li
-            key={a.id}
-            className="flex items-center justify-between rounded-xl border border-white/10 p-4"
+      {/* Empty State */}
+      {items.length === 0 ? (
+        <div className="text-center py-12">
+          <Megaphone size={48} className="mx-auto text-white/20 mb-4" />
+          <h3 className="text-lg font-semibold text-white/80">No adverts yet</h3>
+          <p className="text-white/50 mt-1">Create your first advert to get started</p>
+          <button
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+            className={`${btnPrimary} mt-4`}
           >
-            <div className="flex items-center gap-4">
-              {a.videoUrl ? (
-                <video
-                  src={toPublicUrl(a.videoUrl)}
-                  className="h-12 w-16 object-cover rounded-md border border-white/10"
-                  muted
-                  loop
-                  playsInline
-                />
-              ) : a.imageUrl ? (
-                <img
-                  src={toPublicUrl(a.imageUrl)}
-                  alt={a.title}
-                  className="h-12 w-16 object-cover rounded-md border border-white/10"
-                />
-              ) : (
-                <div className="h-12 w-16 rounded-md border border-white/10 grid place-items-center text-xs opacity-60">
-                  no img
-                </div>
-              )}
-
-              <div>
-                <div className="font-semibold flex items-center gap-2">
-                  {a.title}
-                  {a.videoUrl && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-600/30 border border-indigo-400/30 text-indigo-200">
-                      Video
-                    </span>
+            <Plus size={18} />
+            <span>Create advert</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {items.map((a) => (
+            <div
+              key={a.id}
+              className={`${cardBase} overflow-hidden hover:border-white/20 transition-all duration-300`}
+            >
+              <div className="flex gap-4 p-4">
+                {/* Media Preview */}
+                <div className="shrink-0">
+                  {a.videoUrl ? (
+                    <div className="relative w-24 h-20 rounded-xl overflow-hidden border border-white/10">
+                      <video
+                        src={toPublicUrl(a.videoUrl)}
+                        className="w-full h-full object-cover"
+                        muted
+                        loop
+                        playsInline
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <Video size={20} className="text-white" />
+                      </div>
+                    </div>
+                  ) : a.imageUrl ? (
+                    <img
+                      src={toPublicUrl(a.imageUrl)}
+                      alt={a.title}
+                      className="w-24 h-20 rounded-xl object-cover border border-white/10"
+                    />
+                  ) : (
+                    <div className="w-24 h-20 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center">
+                      <Image size={24} className="text-white/30" />
+                    </div>
                   )}
                 </div>
-                {a.targetUrl && <div className="text-xs opacity-70 break-all">{a.targetUrl}</div>}
-                {(a.startAt || a.endAt) && (
-                  <div className="text-xs opacity-60 mt-1">
-                    {a.startAt ? `Start: ${new Date(a.startAt).toLocaleString()}` : ""}
-                    {a.startAt && a.endAt ? " · " : ""}
-                    {a.endAt ? `Slutt: ${new Date(a.endAt).toLocaleString()}` : ""}
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold truncate flex items-center gap-2">
+                        {a.title}
+                        {a.videoUrl && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-600/30 border border-indigo-400/30 text-indigo-200">
+                            Video
+                          </span>
+                        )}
+                      </h3>
+                      {a.targetUrl && (
+                        <div className="flex items-center gap-1 text-xs text-white/50 mt-1 truncate">
+                          <Link2 size={12} />
+                          <span className="truncate">{a.targetUrl}</span>
+                        </div>
+                      )}
+                    </div>
+                    <span
+                      className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                        a.active
+                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                          : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                      }`}
+                    >
+                      {a.active ? <Eye size={10} /> : <EyeOff size={10} />}
+                      {a.active ? "Active" : "Hidden"}
+                    </span>
                   </div>
-                )}
+
+                  {/* Schedule */}
+                  {(a.startAt || a.endAt) && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-white/50">
+                      {a.startAt && (
+                        <div className="flex items-center gap-1">
+                          <Calendar size={12} />
+                          <span>Start: {formatDateTime(a.startAt)}</span>
+                        </div>
+                      )}
+                      {a.endAt && (
+                        <div className="flex items-center gap-1">
+                          <Clock size={12} />
+                          <span>End: {formatDateTime(a.endAt)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="px-4 py-3 border-t border-white/10 bg-white/[0.02] flex items-center justify-end gap-2">
+                <button
+                  onClick={() => mPublish.mutate({ id: a.id, value: !a.active })}
+                  disabled={mPublish.isPending}
+                  className={`${btnGhost} ${btnSmall}`}
+                  title={a.active ? "Hide" : "Publish"}
+                >
+                  {a.active ? <EyeOff size={14} /> : <Eye size={14} />}
+                  <span className="hidden sm:inline">{a.active ? "Hide" : "Publish"}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setEditing(a);
+                    setOpen(true);
+                  }}
+                  className={`${btnGhost} ${btnSmall}`}
+                  title="Edit"
+                >
+                  <Pencil size={14} />
+                  <span className="hidden sm:inline">Edit</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Delete advert "${a.title}"?`)) mDelete.mutate(a.id);
+                  }}
+                  className={`${btnDanger} ${btnSmall}`}
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
+          ))}
+        </div>
+      )}
 
-            <div className="flex items-center gap-2">
-              <span
-                className={`px-2 py-1 text-sm rounded-md border ${
-                  a.active
-                    ? "border-emerald-600/30 bg-emerald-900/30 text-emerald-300"
-                    : "border-red-600/30 bg-red-900/30 text-red-300"
-                }`}
-              >
-                {a.active ? "Publisert" : "Skjult"}
-              </span>
-
-              <button
-                onClick={() => togglePublished(a)}
-                disabled={mPublish.isPending}
-                className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
-                title={a.active ? "Deaktiver" : "Aktiver"}
-              >
-                {a.active ? "Unpublish" : "Publish"}
-              </button>
-
-              <button
-                onClick={() => {
-                  setEditing(a);
-                  setOpen(true);
-                }}
-                className="rounded-lg px-3 py-1 border border-white/15 hover:bg-white/5"
-              >
-                Rediger
-              </button>
-
-              <button
-                onClick={() => {
-                  if (confirm(`Slette annonse "${a.title}"?`)) mDelete.mutate(a.id);
-                }}
-                className="rounded-lg px-3 py-1 border border-red-500/30 text-red-300 hover:bg-red-500/10"
-              >
-                Slett
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-
+      {/* Modal */}
       {open && (
         <AdvertModal
           initial={editing ?? undefined}
@@ -216,6 +302,7 @@ export default function AdminAdverts() {
             if (editing) mUpdate.mutate({ id: editing.id, data: payload });
             else mCreate.mutate(payload);
           }}
+          isLoading={mCreate.isPending || mUpdate.isPending}
         />
       )}
     </div>
@@ -226,10 +313,12 @@ function AdvertModal({
   initial,
   onClose,
   onSubmit,
+  isLoading,
 }: {
   initial?: AdvertDTO;
   onClose: () => void;
   onSubmit: (data: AdvertUpsert) => void;
+  isLoading?: boolean;
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [targetUrl, setTargetUrl] = useState(initial?.targetUrl ?? "");
@@ -246,7 +335,6 @@ function AdvertModal({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
 
-  // auto-set endAt når varighet velges og vi har start
   function applyDuration(preset: "" | "1d" | "7d" | "30d") {
     setDuration(preset);
     if (!preset) return;
@@ -261,142 +349,166 @@ function AdvertModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
-      <div className="w-full max-w-2xl rounded-2xl border border-white/15 bg-neutral-900 p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">{initial ? "Rediger annonse" : "Ny annonse"}</h2>
+    <div
+      className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-2xl bg-[#0b1527] border border-white/15 shadow-2xl my-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-5 border-b border-white/10">
+          <h2 className="text-xl font-bold">{initial ? "Edit advert" : "New advert"}</h2>
           <button
             onClick={onClose}
-            className="rounded-lg border border-white/15 px-3 py-1 hover:bg-white/5"
+            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition"
+            aria-label="Close"
           >
-            Lukk
+            <X size={18} />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="space-y-1">
-            <span className="text-sm opacity-80">Tittel *</span>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2"
-            />
-          </label>
+        {/* Modal Body */}
+        <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="space-y-1.5">
+              <span className="text-sm text-white/70">Title *</span>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className={inputBase}
+                placeholder="Advert title"
+              />
+            </label>
 
-          <label className="space-y-1">
-            <span className="text-sm opacity-80">Lenke (valgfritt)</span>
-            <input
-              value={targetUrl}
-              onChange={(e) => setTargetUrl(e.target.value)}
-              className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2"
-            />
-          </label>
+            <label className="space-y-1.5">
+              <span className="text-sm text-white/70">Target URL (optional)</span>
+              <input
+                value={targetUrl}
+                onChange={(e) => setTargetUrl(e.target.value)}
+                className={inputBase}
+                placeholder="https://example.com"
+              />
+            </label>
+          </div>
 
-          {/* START */}
-          <div className="md:col-span-2 rounded-xl border border-white/10 p-4 bg-black/20">
-            <div className="flex items-center justify-between mb-3">
-              <div className="font-semibold">Start</div>
+          {/* Schedule Section */}
+          <div className={`${cardBase} p-4 space-y-4`}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Calendar size={16} className="text-white/60" />
+                Schedule
+              </h3>
               <div className="flex items-center gap-2">
-                <span className="text-xs opacity-70">Varighet</span>
+                <span className="text-xs text-white/50">Duration</span>
                 <select
                   value={duration}
                   onChange={(e) => applyDuration(e.target.value as any)}
-                  className="rounded-lg bg-black/30 border border-white/10 px-2 py-1 text-sm"
+                  className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 text-sm outline-none"
                 >
-                  <option value="">Manuelt</option>
-                  <option value="1d">1 dag</option>
-                  <option value="7d">7 dager</option>
-                  <option value="30d">30 dager</option>
+                  <option value="">Manual</option>
+                  <option value="1d">1 day</option>
+                  <option value="7d">7 days</option>
+                  <option value="30d">30 days</option>
                 </select>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <label className="space-y-1">
-                <span className="text-sm opacity-80">Dato (dd/mm/yyyy)</span>
-                <input
-                  value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    if (duration) applyDuration(duration);
-                  }}
-                  placeholder="01/09/2025"
-                  className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2"
-                />
-              </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="text-sm text-white/60 font-medium">Start</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="space-y-1">
+                    <span className="text-xs text-white/50">Date (dd/mm/yyyy)</span>
+                    <input
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        if (duration) applyDuration(duration);
+                      }}
+                      placeholder="01/09/2025"
+                      className={inputBase}
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-xs text-white/50">Time</span>
+                    <input
+                      type="time"
+                      step={1}
+                      value={startTime}
+                      onChange={(e) => {
+                        setStartTime(e.target.value);
+                        if (duration) applyDuration(duration);
+                      }}
+                      className={inputBase}
+                    />
+                  </label>
+                </div>
+              </div>
 
-              <label className="space-y-1">
-                <span className="text-sm opacity-80">Tid (HH:MM:SS)</span>
-                <input
-                  type="time"
-                  step={1}
-                  value={startTime}
-                  onChange={(e) => {
-                    setStartTime(e.target.value);
-                    if (duration) applyDuration(duration);
-                  }}
-                  className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2"
-                />
-              </label>
+              <div className="space-y-3">
+                <div className="text-sm text-white/60 font-medium">End</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="space-y-1">
+                    <span className="text-xs text-white/50">Date (dd/mm/yyyy)</span>
+                    <input
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      placeholder="30/09/2025"
+                      className={inputBase}
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-xs text-white/50">Time</span>
+                    <input
+                      type="time"
+                      step={1}
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className={inputBase}
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* END */}
-          <div className="md:col-span-2 rounded-xl border border-white/10 p-4 bg-black/20">
-            <div className="font-semibold mb-3">Slutt</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <label className="space-y-1">
-                <span className="text-sm opacity-80">Dato (dd/mm/yyyy)</span>
-                <input
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  placeholder="30/09/2025"
-                  className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2"
-                />
-              </label>
+          {/* Media Upload */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="space-y-1.5">
+              <span className="text-sm text-white/70 flex items-center gap-2">
+                <Image size={14} />
+                Image (optional)
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                className={`${inputBase} file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-white/10 file:text-white/80 file:text-sm file:cursor-pointer`}
+              />
+            </label>
 
-              <label className="space-y-1">
-                <span className="text-sm opacity-80">Tid (HH:MM:SS)</span>
-                <input
-                  type="time"
-                  step={1}
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2"
-                />
-              </label>
-            </div>
+            <label className="space-y-1.5">
+              <span className="text-sm text-white/70 flex items-center gap-2">
+                <Video size={14} />
+                Video (optional)
+              </span>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
+                className={`${inputBase} file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-white/10 file:text-white/80 file:text-sm file:cursor-pointer`}
+              />
+            </label>
           </div>
-
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-sm opacity-80">Bilde (valgfritt)</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-              className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2"
-            />
-          </label>
-
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-sm opacity-80">Video (valgfritt)</span>
-            <input
-              type="file"
-              accept="video/*"
-              onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
-              className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2"
-            />
-          </label>
         </div>
 
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-lg px-4 py-2 border border-white/15 hover:bg-white/5"
-          >
-            Avbryt
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end gap-3 p-5 border-t border-white/10">
+          <button className={btnGhost} onClick={onClose}>
+            Cancel
           </button>
-
           <button
             onClick={() => {
               const startAt = isoFromLocalParts(startDate, startTime);
@@ -413,9 +525,17 @@ function AdvertModal({
 
               onSubmit(payload);
             }}
-            className="rounded-lg px-4 py-2 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10"
+            className={btnPrimary}
+            disabled={isLoading || !title.trim()}
           >
-            {initial ? "Lagre" : "Opprett"}
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <span>{initial ? "Save changes" : "Create advert"}</span>
+            )}
           </button>
         </div>
       </div>

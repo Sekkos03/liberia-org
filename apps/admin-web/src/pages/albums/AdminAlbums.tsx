@@ -10,15 +10,15 @@ import {
   type AlbumDTO,
   type AlbumUpsert,
 } from "../../lib/albums";
+import { Images, Plus, Pencil, Trash2, Eye, EyeOff, FolderOpen, X } from "lucide-react";
 
-const badgeBase = "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium";
-const badgeYes = badgeBase + " bg-green-900/30 text-green-300 border border-green-700/40";
-const badgeNo = badgeBase + " bg-zinc-800 text-zinc-300 border border-white/10";
-
-const btn = "inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold border";
-const btnGhost = btn + " bg-transparent text-white/90 border-white/15 hover:bg-white/5";
-const btnDanger = btn + " bg-red-600/90 text-white border-red-600/70 hover:bg-red-600";
-const btnPrimary = btn + " bg-indigo-600/95 text-white border-indigo-500 hover:bg-indigo-600";
+/* ---------- Style constants ---------- */
+const btnBase = "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 active:scale-[0.98]";
+const btnPrimary = `${btnBase} bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5`;
+const btnGhost = `${btnBase} border border-white/15 bg-white/5 hover:bg-white/10 text-white/90 px-3 py-2`;
+const btnDanger = `${btnBase} bg-red-600/90 hover:bg-red-600 text-white px-3 py-2`;
+const btnSmall = "px-2.5 py-1.5 text-sm";
+const inputBase = "w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 placeholder:text-white/40";
 
 type ModalMode = "create" | "edit";
 
@@ -59,7 +59,6 @@ export default function AdminAlbums() {
   const rows: AlbumDTO[] = useMemo(() => {
     const raw: any = q.data;
     const list: AlbumDTO[] = Array.isArray(raw?.content) ? raw.content : Array.isArray(raw) ? raw : [];
-    // Sort newest first if createdAt exists
     return list.slice().sort((a, b) => {
       const da = a.createdAt ? Date.parse(a.createdAt) : 0;
       const db = b.createdAt ? Date.parse(b.createdAt) : 0;
@@ -98,7 +97,7 @@ export default function AdminAlbums() {
 
     const title = (form.title || "").trim();
     if (!title) {
-      setErr("Tittel er påkrevd.");
+      setErr("Title is required.");
       return;
     }
 
@@ -112,7 +111,7 @@ export default function AdminAlbums() {
         });
       } else {
         if (!editingId) {
-          setErr("Mangler album-id for redigering.");
+          setErr("Missing album ID for editing.");
           return;
         }
         await mUpdate.mutateAsync({
@@ -135,136 +134,224 @@ export default function AdminAlbums() {
         e?.response?.data?.detail ||
         e?.response?.data?.message ||
         e?.message ||
-        "Noe gikk galt.";
+        "Something went wrong.";
       setErr(String(msg));
     }
   }
 
-  if (q.isLoading) return <div>Laster…</div>;
-  if (q.isError) return <div className="text-red-400">Kunne ikke laste album.</div>;
+  if (q.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-indigo-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (q.isError) {
+    return (
+      <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+        Failed to load albums. Please try again.
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold">Albums</h1>
-        <button className={btnPrimary} onClick={openCreate}>
-          Nytt album
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold">Albums</h1>
+          <p className="text-white/60 text-sm mt-1">Manage your photo and video albums</p>
+        </div>
+        <button onClick={openCreate} className={btnPrimary}>
+          <Plus size={18} />
+          <span>New album</span>
         </button>
       </div>
 
-      <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {rows.map((a) => (
-          <li key={a.id} className="rounded-xl border border-white/10 bg-[rgba(10,18,36,.65)] p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-xl font-bold">{a.title}</div>
-                <div className="text-white/70">@{a.slug}</div>
+      {/* Albums Grid */}
+      {rows.length === 0 ? (
+        <div className="text-center py-12">
+          <Images size={48} className="mx-auto text-white/20 mb-4" />
+          <h3 className="text-lg font-semibold text-white/80">No albums yet</h3>
+          <p className="text-white/50 mt-1">Create your first album to get started</p>
+          <button onClick={openCreate} className={`${btnPrimary} mt-4`}>
+            <Plus size={18} />
+            <span>Create album</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {rows.map((a) => (
+            <div
+              key={a.id}
+              className="group rounded-2xl border border-white/10 bg-[rgba(10,18,36,0.5)] overflow-hidden hover:border-white/20 transition-all duration-300"
+            >
+              {/* Card Header */}
+              <div className="p-5 pb-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                      <Images size={20} className="text-indigo-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-lg truncate">{a.title}</h3>
+                      <p className="text-sm text-white/50">@{a.slug}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                      a.published
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                        : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                    }`}
+                  >
+                    {a.published ? <Eye size={12} /> : <EyeOff size={12} />}
+                    {a.published ? "Published" : "Draft"}
+                  </span>
+                </div>
+
+                {a.description && (
+                  <p className="mt-3 text-sm text-white/70 line-clamp-2">{a.description}</p>
+                )}
               </div>
-              <span className={a.published ? badgeYes : badgeNo}>
-                {a.published ? "Publisert" : "Utkast"}
-              </span>
+
+              {/* Card Actions */}
+              <div className="px-5 py-3 border-t border-white/10 bg-white/[0.02] flex items-center gap-2">
+                <Link
+                  to={`/admin/albums/${a.id}`}
+                  className={`${btnGhost} ${btnSmall} flex-1`}
+                >
+                  <FolderOpen size={14} />
+                  <span>Open</span>
+                </Link>
+
+                <button
+                  onClick={() => openEdit(a)}
+                  className={`${btnGhost} ${btnSmall}`}
+                  title="Edit"
+                >
+                  <Pencil size={14} />
+                </button>
+
+                <button
+                  onClick={() => togglePublished(a)}
+                  disabled={mPublish.isPending}
+                  className={`${btnGhost} ${btnSmall}`}
+                  title={a.published ? "Unpublish" : "Publish"}
+                >
+                  {a.published ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (confirm(`Delete album "${a.title}"?`)) mDelete.mutate(a.id);
+                  }}
+                  disabled={mDelete.isPending}
+                  className={`${btnDanger} ${btnSmall}`}
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
+          ))}
+        </div>
+      )}
 
-            {a.description && <p className="mt-2 text-white/80">{a.description}</p>}
-
-            <div className="flex flex-wrap items-center gap-2 pt-3">
-              <Link to={`/admin/albums/${a.id}`} className={btnGhost}>
-                Åpne
-              </Link>
-
-              <button className={btnGhost} onClick={() => openEdit(a)}>
-                Rediger
-              </button>
-
-              <button className={btnGhost} onClick={() => togglePublished(a)} disabled={mPublish.isPending}>
-                {a.published ? "Unpublish" : "Publish"}
-              </button>
-
-              <button
-                className={btnDanger}
-                onClick={() => {
-                  if (confirm(`Slette album “${a.title}”?`)) mDelete.mutate(a.id);
-                }}
-                disabled={mDelete.isPending}
-              >
-                Slett
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      {/* Create/Edit modal */}
+      {/* Create/Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/60 grid place-items-center z-50" onClick={() => setModalOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+          onClick={() => setModalOpen(false)}
+        >
           <div
-            className="bg-[#0b1527] border border-white/15 rounded-xl p-5 w-[min(680px,92vw)]"
+            className="w-full max-w-lg rounded-2xl bg-[#0b1527] border border-white/15 shadow-2xl my-8"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xl font-semibold">{mode === "create" ? "Nytt album" : "Rediger album"}</h2>
-              <button className={btnGhost} onClick={() => setModalOpen(false)}>
-                Lukk
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <h2 className="text-xl font-bold">
+                {mode === "create" ? "New album" : "Edit album"}
+              </h2>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition"
+                aria-label="Close"
+              >
+                <X size={18} />
               </button>
             </div>
 
-            {err && (
-              <div className="mb-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-red-200">
-                {err}
-              </div>
-            )}
+            {/* Modal Body */}
+            <div className="p-5 space-y-4">
+              {err && (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm">
+                  {err}
+                </div>
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <label className="grid gap-1">
-                <span className="text-sm text-white/70">Slug (valgfritt)</span>
+              <label className="block space-y-1.5">
+                <span className="text-sm text-white/70">Title *</span>
                 <input
-                  className="rounded-md bg-white/5 border border-white/10 px-3 py-2 outline-none"
-                  placeholder="f.eks founders-day (kan være tom)"
-                  value={form.slug ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                />
-              </label>
-
-              <label className="grid gap-1">
-                <span className="text-sm text-white/70">Tittel *</span>
-                <input
-                  className="rounded-md bg-white/5 border border-white/10 px-3 py-2 outline-none"
+                  className={inputBase}
+                  placeholder="Album title"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 />
               </label>
 
-              <label className="grid gap-1 md:col-span-2">
-                <span className="text-sm text-white/70">Beskrivelse (valgfritt)</span>
+              <label className="block space-y-1.5">
+                <span className="text-sm text-white/70">Slug (optional)</span>
+                <input
+                  className={inputBase}
+                  placeholder="e.g. founders-day"
+                  value={form.slug ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                />
+                <p className="text-xs text-white/40 mt-1">URL-friendly identifier. Leave empty to auto-generate.</p>
+              </label>
+
+              <label className="block space-y-1.5">
+                <span className="text-sm text-white/70">Description (optional)</span>
                 <textarea
-                  rows={4}
-                  className="rounded-md bg-white/5 border border-white/10 px-3 py-2 outline-none"
+                  rows={3}
+                  className={`${inputBase} resize-y`}
+                  placeholder="Brief description of the album"
                   value={form.description ?? ""}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
               </label>
 
-              <label className="flex items-center gap-2 md:col-span-2 pt-1">
+              <label className="flex items-center gap-3 pt-2">
                 <input
                   type="checkbox"
                   checked={Boolean(form.published)}
                   onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
+                  className="w-5 h-5 rounded border-white/20 bg-white/5 text-indigo-600 focus:ring-indigo-500/30"
                 />
-                <span className="text-sm text-white/80">Publisert</span>
+                <span className="text-white/80">Publish immediately</span>
               </label>
             </div>
 
-            <div className="flex items-center justify-end gap-2 mt-4">
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-white/10">
               <button className={btnGhost} onClick={() => setModalOpen(false)}>
-                Avbryt
+                Cancel
               </button>
-
               <button
                 className={btnPrimary}
                 onClick={submit}
                 disabled={mCreate.isPending || mUpdate.isPending}
               >
-                {mode === "create" ? "Opprett album" : "Lagre endringer"}
+                {mCreate.isPending || mUpdate.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <span>{mode === "create" ? "Create album" : "Save changes"}</span>
+                )}
               </button>
             </div>
           </div>
