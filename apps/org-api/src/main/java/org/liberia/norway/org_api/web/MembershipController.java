@@ -1,15 +1,16 @@
 package org.liberia.norway.org_api.web;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Map;
 
 import org.liberia.norway.org_api.model.Member;
+import org.liberia.norway.org_api.model.Member.Status;
 import org.liberia.norway.org_api.repository.MemberRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,151 +19,172 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.transaction.Transactional;
 
-
-@CrossOrigin // optional if you added the global CorsFilter
+@CrossOrigin
 @RestController
 @RequestMapping("/api/membership")
 public class MembershipController {
   private static final Logger log = LoggerFactory.getLogger(MembershipController.class);
-
+  
   private static final int MEMBERSHIP_FEE_NOK = 300;
 
-  private final MemberRepository members;
+private final org.springframework.mail.javamail.JavaMailSender mailSender;
 
- private final JavaMailSender mailSender;
+  private final MemberRepository memrepo;
 
-public MembershipController(MemberRepository members, JavaMailSender mailSender) {
-  this.members = members;
-  this.mailSender = mailSender;
+  public MembershipController(MemberRepository memrepo, JavaMailSender mailSender) {
+    this.memrepo = memrepo;
+    this.mailSender = mailSender;
+  }
+
+  @GetMapping("/exists")
+public boolean exists(@RequestParam String email) {
+  return memrepo.existsByEmailIgnoreCaseAndStatus(email, Status.ACCEPTED);
 }
 
-  // ✅ Ny: sjekk om medlem finnes (brukes før Vipps-steget)
-  @GetMapping("/exists")
-  public Map<String, Boolean> exists(
-      @RequestParam(required = false) String email,
-      @RequestParam(required = false) String personalNr
-  ) {
-    boolean byEmail = email != null && !email.isBlank() && members.existsByEmailIgnoreCase(email.trim());
-    boolean byPn = personalNr != null && !personalNr.isBlank() && members.existsByPersonalNr(personalNr.trim());
-    return Map.of("exists", byEmail || byPn);
-  }
 
   @PostMapping(path = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)
   @Transactional
   public ResponseEntity<?> apply(@RequestBody MemberApplyRequest req) {
     try {
-      // basic validation
-      if (req.firstName == null || req.firstName.isBlank()
-          || req.lastName == null || req.lastName.isBlank()
-          || req.email == null || req.email.isBlank()
-          || req.personalNr == null || req.personalNr.isBlank()) {
-        return ResponseEntity.badRequest().body("Fyll inn alle nødvendige felter.");
+      // Basic validation
+      if (isBlank(req.firstName) || isBlank(req.lastName) || isBlank(req.email) || isBlank(req.personalNr)) {
+        return ResponseEntity.badRequest().body("Please fill in all required fields.");
       }
 
-      // ✅ 1) Sjekk om allerede medlem -> 409
       String email = req.email.trim();
       String pn = req.personalNr.trim();
 
-      boolean exists = members.existsByEmailIgnoreCase(email) || members.existsByPersonalNr(pn);
-      if (exists) {
-        return ResponseEntity.status(409).body("Du er allerede medlem.");
-      }
+      if (memrepo.existsByEmailIgnoreCaseAndStatus(req.email, Status.ACCEPTED)) {
+  throw new ResponseStatusException(HttpStatus.CONFLICT, "You are already a member.");
+}
 
-      // ✅ 2) Vipps må være bekreftet -> ellers 400 "Betal..."
-      // (frontend stopper også, men dette sikrer backend)
+if (memrepo.existsByEmailIgnoreCaseAndStatus(req.email, Status.PENDING)) {
+  throw new ResponseStatusException(HttpStatus.CONFLICT, "You already have a pending application.");
+}
+
+if (memrepo.existsByEmailIgnoreCaseAndStatus(req.email, Status.REJECTED)) {
+  throw new ResponseStatusException(HttpStatus.CONFLICT, "Your application was rejected. Contact admin.");
+}
+
+if (req.personalNr != null && memrepo.existsByPersonalNrAndStatus(req.personalNr, Status.ACCEPTED)) {
+  throw new ResponseStatusException(HttpStatus.CONFLICT, "Personal number already exists as a member.");
+}
+
+
+      // Vipps validation
       if (req.vippsConfirmed == null || !req.vippsConfirmed) {
-        return ResponseEntity.badRequest().body("Betal med Vipps 300kr for å fullføre medlemskap.");
+        return ResponseEntity.badRequest().body("Please pay with Vipps before submitting your application.");
       }
-      if (req.vippsReference == null || req.vippsReference.isBlank()) {
-        return ResponseEntity.badRequest().body("Betal med Vipps 300kr og skriv inn kvittering/reference.");
+      if (isBlank(req.vippsReference)) {
+        return ResponseEntity.badRequest().body("Please enter your Vipps transaction reference.");
       }
-      if (req.vippsAmountNok == null || req.vippsAmountNok.isBlank()) {
-        return ResponseEntity.badRequest().body("Betal med Vipps 300kr for å fullføre medlemskap.");
+      if (isBlank(req.vippsAmountNok)) {
+        return ResponseEntity.badRequest().body("Vipps amount is required.");
       }
 
       int amount;
       try {
         amount = Integer.parseInt(req.vippsAmountNok.trim());
       } catch (Exception e) {
-        return ResponseEntity.badRequest().body("Ugyldig Vipps-beløp.");
+        return ResponseEntity.badRequest().body("Invalid Vipps amount.");
       }
 
       if (amount != MEMBERSHIP_FEE_NOK) {
-        return ResponseEntity.badRequest().body("Vipps-beløpet må være 300kr for medlemskap.");
+        return ResponseEntity.badRequest().body("Vipps amount must be 300 NOK.");
       }
 
-      // ✅ 3) Lagre medlem
-      Member m = new Member();
-      m.setFirstName(req.firstName);
-      m.setLastName(req.lastName);
-      m.setDateOfBirth(parseDate(req.dateOfBirth));
-      m.setPersonalNr(n(req.personalNr));
-      m.setAddress(n(req.address));
-      m.setPostCode(n(req.postCode));
-      m.setCity(n(req.city));
-      m.setPhone(n(req.phone));
-      m.setEmail(n(req.email));
-      m.setOccupation(n(req.occupation));
+      // Create application (PENDING)
+      Member a = new Member();
+      a.setFirstName(req.firstName.trim());
+      a.setLastName(req.lastName.trim());
+      a.setDateOfBirth(parseDate(req.dateOfBirth));
+      a.setPersonalNr(pn);
+      a.setAddress(n(req.address));
+      a.setPostCode(n(req.postCode));
+      a.setCity(n(req.city));
+      a.setPhone(n(req.phone));
+      a.setEmail(email);
+      a.setOccupation(n(req.occupation));
+      a.setVippsAmountNok(amount);
+      a.setVippsReference(req.vippsReference.trim());
+      a.setStatus(Status.PENDING);
+      a.setHandledAt(null);
+      a.setDeleteAt(null);
+      a.setCreatedAt(Instant.now());
 
-      Member saved = members.save(m);
-      sendConfirmationEmail(saved, req.vippsReference, amount);
+      a = memrepo.save(a);
+      sendApplicationReceivedEmail(a);
 
 
-      // ✅ 4) (Valgfritt) Send e-postbekreftelse her (se seksjon under)
-      // sendConfirmationEmail(saved, req.vippsReference, amount);
-
-      return ResponseEntity.status(201).body(MembershipAdminController.MemberDTO.from(saved));
+      // Return minimal response (frontend doesn't need member info)
+      return ResponseEntity.status(201).body(java.util.Map.of(
+          "id", a.getId(),
+          "status", a.getStatus().name()
+      ));
     } catch (Exception ex) {
       log.error("Failed to save membership application", ex);
-      return ResponseEntity.internalServerError().build();
+      return ResponseEntity.internalServerError().body("Server error.");
     }
+  }
+
+  private static boolean isBlank(String s) {
+    return s == null || s.trim().isEmpty();
   }
 
   private static LocalDate parseDate(String s) {
-    try {
-      return (s == null || s.isBlank()) ? null : LocalDate.parse(s);
-    } catch (Exception e) {
-      return null;
-    }
+    try { return (s == null || s.isBlank()) ? null : LocalDate.parse(s); }
+    catch (Exception e) { return null; }
   }
 
   private static String n(String s) {
-    return (s == null || s.isBlank()) ? null : s;
+    return (s == null || s.isBlank()) ? null : s.trim();
   }
 
   public static final class MemberApplyRequest {
     public String firstName, lastName, dateOfBirth, personalNr, address,
         postCode, city, phone, email, occupation;
 
-    // ✅ Ny: Vipps fields fra frontend step 2
-    public String vippsAmountNok;     // "300"
-    public String vippsReference;     // kvittering / ref
-    public Boolean vippsConfirmed;    // true/false
+    public String vippsAmountNok;
+    public String vippsReference;
+    public Boolean vippsConfirmed;
   }
 
-  // --------------------------
-  // OPTIONAL: Email confirmation (se under)
-  // --------------------------
+  private void sendApplicationReceivedEmail(Member app) {
+  if (app.getEmail() == null || app.getEmail().isBlank()) return;
 
-   private void sendConfirmationEmail(Member member, String vippsRef, int amountNok) {
-    // Bruk din foretrukne e-posttjeneste / bibliotek her.
-    // Eksempel med JavaMailSender (Spring Boot):
-    String to = member.getEmail();
-    String subject = "Medlemskap Bekreftelse";
-    String body = String.format("Kjære %s %s,\n\nTakk for at du ble medlem! Vi har mottatt din betaling på %d NOK via Vipps (Ref: %s).\n\nMed vennlig hilsen,\nULAN (Union Of Liberian Associtations in Norway)",
-        member.getFirstName(), member.getLastName(), amountNok, vippsRef);
+  String to = app.getEmail().trim();
+  String subject = "ULAN Membership Application Received";
 
-    SimpleMailMessage message = new SimpleMailMessage();
-    message.setTo(to);
-    message.setSubject(subject);
-    message.setText(body);
+  String body = """
+      Hello %s %s,
 
-    mailSender.send(message);
-  } 
+      We have received your membership application and it is now under review by our administration team.
+
+      What happens next:
+      - An admin will verify your Vipps transaction reference.
+      - If approved, you will receive a confirmation email that you are now a member of ULAN.
+
+      Thank you for applying.
+
+      Kind regards,
+      ULAN
+      """.formatted(
+          app.getFirstName() == null ? "" : app.getFirstName(),
+          app.getLastName() == null ? "" : app.getLastName()
+      );
+
+  org.springframework.mail.SimpleMailMessage msg = new org.springframework.mail.SimpleMailMessage();
+  msg.setTo(to);
+  msg.setSubject(subject);
+  msg.setText(body);
+
+  mailSender.send(msg);
+}
 
 }
-  
+
  

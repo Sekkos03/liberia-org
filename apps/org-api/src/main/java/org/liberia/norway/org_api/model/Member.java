@@ -1,8 +1,18 @@
 package org.liberia.norway.org_api.model;
 
-import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "members")
@@ -20,10 +30,48 @@ public class Member {
   @Column(length = 64)  private String phone;
   @Column(length = 320) private String email;
   @Column(length = 160) private String occupation;
+    @Column(nullable = false, length = 128)
+  private String vippsReference;
+  // Vipps payment proof
+  @Column(nullable = false)
+  private Integer vippsAmountNok;
 
   @Column(nullable = false) private Instant createdAt = Instant.now();
   @Column(nullable = false) private Instant updatedAt = Instant.now();
+   @Column(nullable = false) private Instant handledAt = Instant.now();
+  @Column(nullable = false) private Instant deleteAt = Instant.now();
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 16)
+  private Status status = Status.PENDING;
   @PrePersist @PreUpdate void touch() { this.updatedAt = Instant.now(); }
+
+  // vippsReference
+public String getVippsReference() {
+  return vippsReference;
+}
+
+public void setVippsReference(String vippsReference) {
+  this.vippsReference = vippsReference;
+}
+
+// vippsAmountNok
+public Integer getVippsAmountNok() {
+  return vippsAmountNok;
+}
+
+public void setVippsAmountNok(Integer vippsAmountNok) {
+  this.vippsAmountNok = vippsAmountNok;
+}
+
+// status
+public Status getStatus() {
+  return status;
+}
+
+public void setStatus(Status status) {
+  this.status = status;
+}
+
 
   public Long getId() { return id; }
   public void setId(Long id) { this.id = id; }
@@ -51,4 +99,26 @@ public class Member {
   public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
   public Instant getUpdatedAt() { return updatedAt; }
   public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+  // handledAt
+public java.time.Instant getHandledAt() {
+  return handledAt;
+}
+public void setHandledAt(java.time.Instant handledAt) {
+  this.handledAt = handledAt;
+}
+
+// deleteAt
+public java.time.Instant getDeleteAt() {
+  return deleteAt;
+}
+public void setDeleteAt(java.time.Instant deleteAt) {
+  this.deleteAt = deleteAt;
+}
+  
+     public enum Status {
+    PENDING,
+    ACCEPTED,
+    REJECTED
+  }
 }

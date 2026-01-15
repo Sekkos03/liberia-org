@@ -53,7 +53,7 @@ export default function Membership() {
         ? countFilledStep1(form)
         : countFilledStep1(form) + countFilledStep2(form);
 
-    const total = step === 1 ? 9 : 12; // 9 felter i step1, 3 i step2
+    const total = step === 1 ? 9 : 12;
     return Math.round((filled / total) * 100);
   }, [form, step]);
 
@@ -72,9 +72,9 @@ export default function Membership() {
     ];
 
     for (const k of req) {
-      if (!(form[k] ?? "").toString().trim()) e[k] = "Necessary field";
+      if (!(form[k] ?? "").toString().trim()) e[k] = "Required field";
     }
-    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Invalid email";
+    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Invalid email address";
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -82,13 +82,12 @@ export default function Membership() {
 
   function validateStep2(): boolean {
     const e: Record<string, string> = {};
-
-    // Må betale 300 + ref + bekreftelse
     const amount = Number((form.vippsAmountNok || "").replace(",", "."));
+
     if (!Number.isFinite(amount) || amount !== MEMBERSHIP_FEE_NOK) {
       e.vippsAmountNok = `Amount must be ${MEMBERSHIP_FEE_NOK} NOK`;
     }
-    if (!form.vippsReference.trim()) e.vippsReference = "Write Vipps transaction reference";
+    if (!form.vippsReference.trim()) e.vippsReference = "Enter Vipps transaction reference";
     if (!form.vippsConfirmed) e.vippsConfirmed = "You must confirm that you have paid";
 
     setErrors((prev) => ({ ...prev, ...e }));
@@ -99,7 +98,6 @@ export default function Membership() {
     setErr(null);
     if (!validateStep1()) return;
 
-    // ✅ Sjekk allerede medlem før Step 2
     setSaving(true);
     try {
       const exists = await checkAlreadyMember({
@@ -112,9 +110,7 @@ export default function Membership() {
       }
       setStep(2);
     } catch (e: any) {
-      // Hvis check-endpoint mangler (404) lar lib-funksjonen slippe gjennom,
-      // ellers vis feilen.
-      setErr(e?.message ?? "COuld NOT check membership status");
+      setErr(e?.message ?? "Could not check membership status.");
     } finally {
       setSaving(false);
     }
@@ -124,9 +120,8 @@ export default function Membership() {
     e.preventDefault();
     setErr(null);
 
-    // Hvis de prøver uten å betale -> “Betal …”
     if (!validateStep2()) {
-      setErr("Pay with vipps to become a member.");
+      setErr("Please complete the Vipps payment section before submitting.");
       return;
     }
 
@@ -149,7 +144,7 @@ export default function Membership() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.08),_rgba(18,35,70,0.95))]" />
         <div className="relative h-full max-w-5xl mx-auto px-4 flex items-center justify-center">
           <h1 className="text-white text-3xl md:text-4xl font-extrabold">
-            ULAN Membership Registration Form
+            ULAN Membership Application
           </h1>
         </div>
       </div>
@@ -163,134 +158,162 @@ export default function Membership() {
               <p className="text-sm text-gray-600">
                 Step <b>{step}</b> of <b>2</b>
               </p>
-              <p className="text-sm text-gray-600">Progress: <b>{progress}%</b></p>
+              <p className="text-sm text-gray-600">
+                Progress: <b>{progress}%</b>
+              </p>
             </div>
 
-            {err && <div className="mt-3 text-red-600">Error: {err}</div>}
+            {err && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+                <div className="font-semibold">Error</div>
+                <div className="text-sm mt-1">{err}</div>
+              </div>
+            )}
+
             {done && (
-              <div className="mt-3 text-emerald-700 font-medium">
-                ✅ Application sent. You will receive a confirmation email.
+              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">✅</div>
+                  <div>
+                    <div className="text-emerald-900 font-extrabold text-lg">
+                      Application submitted successfully
+                    </div>
+                    <div className="text-emerald-800 text-sm mt-1">
+                      Your application is now under review. You will receive an email once it is approved.
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
-          <form className="p-6 md:p-8 space-y-5" onSubmit={onSubmitFinal} noValidate>
-            {step === 1 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <Input label="First Name" required value={form.firstName} onChange={update("firstName")} error={errors.firstName} />
-                  <Input label="Second Name" required value={form.lastName} onChange={update("lastName")} error={errors.lastName} />
-                </div>
-
-                <Input label="Date of Birth" type="date" required value={form.dateOfBirth} onChange={update("dateOfBirth")} error={errors.dateOfBirth} />
-                <Input label="Personal Number" required value={form.personalNr} onChange={update("personalNr")} error={errors.personalNr} />
-                <Input label="Address" required value={form.address} onChange={update("address")} error={errors.address} />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <Input label="Post Code" required value={form.postCode} onChange={update("postCode")} error={errors.postCode} />
-                  <Input label="City" required value={form.city} onChange={update("city")} error={errors.city} />
-                </div>
-
-                <Input label="Telefon Number" required value={form.phone} onChange={update("phone")} error={errors.phone} />
-                <Input label="E-Mail" type="email" required value={form.email} onChange={update("email")} error={errors.email} />
-
-                <div className="pt-2 flex items-center justify-between">
-                  <p className="text-xs text-gray-500">Never send passwords via this form.</p>
-
-                  <button
-                    type="button"
-                    onClick={onNext}
-                    disabled={saving || done}
-                    className="inline-flex items-center rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95 disabled:opacity-60"
-                  >
-                    {saving ? "Checking…" : "Next"}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* STEP 2: VIPPS */}
-                <div className="rounded-xl border border-gray-200 p-5 bg-[#f7fbff]">
-                  <div className="text-lg font-extrabold text-[#122346]">
-                    Vipps {MEMBERSHIP_FEE_NOK}kr to become a member
+          {!done ? (
+            <form className="p-6 md:p-8 space-y-5" onSubmit={onSubmitFinal} noValidate>
+              {step === 1 ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <Input label="First name" required value={form.firstName} onChange={update("firstName")} error={errors.firstName} />
+                    <Input label="Last name" required value={form.lastName} onChange={update("lastName")} error={errors.lastName} />
                   </div>
 
-                  <div className="mt-2 text-sm text-gray-700">
-                    Scan QR-koden or use vipps-number: <b>{VIPPS_NUMBER}</b> ({VIPPS_RECEIVER})
+                  <Input label="Date of birth" type="date" required value={form.dateOfBirth} onChange={update("dateOfBirth")} error={errors.dateOfBirth} />
+                  <Input label="Personal number" required value={form.personalNr} onChange={update("personalNr")} error={errors.personalNr} />
+                  <Input label="Address" required value={form.address} onChange={update("address")} error={errors.address} />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <Input label="Post code" required value={form.postCode} onChange={update("postCode")} error={errors.postCode} />
+                    <Input label="City" required value={form.city} onChange={update("city")} error={errors.city} />
                   </div>
 
-                  <div className="mt-4 rounded-xl overflow-hidden border bg-white">
-                    <img
-                      src={vippsImg}
-                      alt="Vipps QR"
-                      className="w-full h-[360px] object-contain bg-white block"
-                    />
+                  <Input label="Phone number" required value={form.phone} onChange={update("phone")} error={errors.phone} />
+                  <Input label="Email" type="email" required value={form.email} onChange={update("email")} error={errors.email} />
+
+                  <div className="pt-2 flex items-center justify-between">
+                    <p className="text-xs text-gray-500">Never send passwords via this form.</p>
+
+                    <button
+                      type="button"
+                      onClick={onNext}
+                      disabled={saving}
+                      className="inline-flex items-center rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95 disabled:opacity-60"
+                    >
+                      {saving ? "Checking…" : "Next"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-xl border border-gray-200 p-5 bg-[#f7fbff]">
+                    <div className="text-lg font-extrabold text-[#122346]">
+                      Pay {MEMBERSHIP_FEE_NOK} NOK with Vipps
+                    </div>
+
+                    <div className="mt-2 text-sm text-gray-700">
+                      Scan the QR code or use Vipps number: <b>{VIPPS_NUMBER}</b> ({VIPPS_RECEIVER})
+                    </div>
+
+                    <div className="mt-4 rounded-xl overflow-hidden border bg-white">
+                      <img
+                        src={vippsImg}
+                        alt="Vipps QR"
+                        className="w-full h-[360px] object-contain bg-white block"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+                      <Input
+                        label="Amount (NOK)"
+                        required
+                        value={form.vippsAmountNok}
+                        onChange={update("vippsAmountNok")}
+                        error={errors.vippsAmountNok}
+                      />
+                      <Input
+                        label="Vipps transaction reference"
+                        required
+                        value={form.vippsReference}
+                        onChange={update("vippsReference")}
+                        error={errors.vippsReference}
+                      />
+                    </div>
+
+                    <label className="flex items-start gap-3 mt-4">
+                      <input
+                        type="checkbox"
+                        checked={form.vippsConfirmed}
+                        onChange={update("vippsConfirmed")}
+                        className="mt-1 h-4 w-4"
+                      />
+                      <span className="text-sm text-gray-800">
+                        I confirm that I have paid {MEMBERSHIP_FEE_NOK} NOK with Vipps.
+                        <span className="text-red-600"> *</span>
+                        {errors.vippsConfirmed && (
+                          <span className="block text-[12px] text-red-600 mt-1">
+                            {errors.vippsConfirmed}
+                          </span>
+                        )}
+                      </span>
+                    </label>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-                    <Input
-                      label="AMOUNT (NOK)"
-                      required
-                      value={form.vippsAmountNok}
-                      onChange={update("vippsAmountNok")}
-                      error={errors.vippsAmountNok}
-                    />
-                    <Input
-                      label="Vipps Transaction Reference / Kvittering"
-                      required
-                      value={form.vippsReference}
-                      onChange={update("vippsReference")}
-                      error={errors.vippsReference}
-                    />
-                  </div>
+                  <div className="pt-2 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      disabled={saving}
+                      className="rounded-lg border px-5 py-2.5 font-medium hover:bg-gray-50 disabled:opacity-60"
+                    >
+                      Back
+                    </button>
 
-                  <label className="flex items-start gap-3 mt-4">
-                    <input
-                      type="checkbox"
-                      checked={form.vippsConfirmed}
-                      onChange={update("vippsConfirmed")}
-                      className="mt-1 h-4 w-4"
-                    />
-                    <span className="text-sm text-gray-800">
-                      I can confirm that I have paid {MEMBERSHIP_FEE_NOK}kr with Vipps.
-                      <span className="text-red-600"> *</span>
-                      {errors.vippsConfirmed && (
-                        <span className="block text-[12px] text-red-600 mt-1">
-                          {errors.vippsConfirmed}
-                        </span>
-                      )}
-                    </span>
-                  </label>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="inline-flex items-center rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95 disabled:opacity-60"
+                    >
+                      {saving ? "Submitting…" : "Submit application"}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <div className="mt-3">
+                <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                  <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
                 </div>
-
-                <div className="pt-2 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    disabled={saving || done}
-                    className="rounded-lg border px-5 py-2.5 font-medium hover:bg-gray-50 disabled:opacity-60"
-                  >
-                    Back
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={saving || done}
-                    className="inline-flex items-center rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95 disabled:opacity-60"
-                  >
-                    {saving ? "Sending…" : done ? "Sent" : "Fullfør"}
-                  </button>
-                </div>
-              </>
-            )}
-
-            <div className="mt-3">
-              <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
+                <div className="text-[11px] text-gray-500 mt-1">Page {step} of 2</div>
               </div>
-              <div className="text-[11px] text-gray-500 mt-1">Page 1 of 2</div>
+            </form>
+          ) : (
+            <div className="p-6 md:p-8">
+              <button
+                className="rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              >
+                Back to top
+              </button>
             </div>
-          </form>
+          )}
         </div>
       </div>
 
