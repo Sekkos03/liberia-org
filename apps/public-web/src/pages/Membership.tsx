@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import vippsImg from "../assets/vipps.jpeg";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -16,6 +16,7 @@ type Step = 1 | 2;
 
 export default function Membership() {
   const [step, setStep] = useState<Step>(1);
+  const formStartRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<MembershipForm>({
     firstName: "",
@@ -136,8 +137,33 @@ export default function Membership() {
     }
   }
 
+  const resetForm = () => {
+    setForm({
+      firstName: "",
+      lastName: "",
+      dateOfBirth: "",
+      personalNr: "",
+      address: "",
+      postCode: "",
+      city: "",
+      phone: "",
+      email: "",
+      vippsAmountNok: String(MEMBERSHIP_FEE_NOK),
+      vippsReference: "",
+      vippsConfirmed: false,
+    });
+    setStep(1);
+    setDone(false);
+    setErr(null);
+    setErrors({});
+    // Scroll to top after state updates
+    setTimeout(() => {
+      formStartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  };
+
   return (
-    <div className="min-h-[60vh] bg-gradient-to-b from-slate-900/30 to-slate-900/0">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-slate-900/30 to-slate-900/0">
       <Navbar />
 
       <div className="relative h-44 md:h-56 w-full bg-[#122346]">
@@ -149,8 +175,8 @@ export default function Membership() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 pb-16 -mt-20">
-        <div className="rounded-2xl bg-white text-gray-900 shadow-xl overflow-hidden">
+      <div className="flex-1 max-w-3xl mx-auto px-4 pb-16 -mt-20 w-full">
+        <div ref={formStartRef} className="rounded-2xl bg-white text-gray-900 shadow-xl overflow-hidden">
           <div className="h-2 bg-[#122346]" />
 
           <div className="p-6 md:p-8 border-b border-gray-100">
@@ -215,7 +241,7 @@ export default function Membership() {
                       type="button"
                       onClick={onNext}
                       disabled={saving}
-                      className="inline-flex items-center rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95 disabled:opacity-60"
+                      className="inline-flex items-center rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95 disabled:opacity-60 transition-opacity"
                     >
                       {saving ? "Checking…" : "Next"}
                     </button>
@@ -281,7 +307,7 @@ export default function Membership() {
                       type="button"
                       onClick={() => setStep(1)}
                       disabled={saving}
-                      className="rounded-lg border px-5 py-2.5 font-medium hover:bg-gray-50 disabled:opacity-60"
+                      className="rounded-lg border px-5 py-2.5 font-medium hover:bg-gray-50 disabled:opacity-60 transition-colors"
                     >
                       Back
                     </button>
@@ -289,7 +315,7 @@ export default function Membership() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="inline-flex items-center rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95 disabled:opacity-60"
+                      className="inline-flex items-center rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95 disabled:opacity-60 transition-opacity"
                     >
                       {saving ? "Submitting…" : "Submit application"}
                     </button>
@@ -307,10 +333,10 @@ export default function Membership() {
           ) : (
             <div className="p-6 md:p-8">
               <button
-                className="rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                className="rounded-lg bg-[#122346] text-white px-6 py-2.5 font-medium shadow hover:opacity-95 transition-opacity"
+                onClick={resetForm}
               >
-                Back to top
+                Back to start
               </button>
             </div>
           )}

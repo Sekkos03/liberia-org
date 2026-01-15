@@ -31,15 +31,16 @@ export default function AboutUs() {
         {/* Hero */}
         <section className="aboutHero" aria-label="Intro">
           <div className="aboutHero__inner">
-            <img src={liberianHeadlines} alt="" className="aboutHero__img" />
+            <img src={liberianHeadlines} alt="Liberian Headlines" className="aboutHero__img" />
           </div>
-          <div className="aboutHero__title">About us</div>
+          <div className="aboutHero__title">About Us</div>
         </section>
 
         {/* Buttons */}
         <section className="aboutBtns">
           <Link className="pillBtn" to="/about/constitution">
-            CONSTITUTION
+            <span className="pillBtn__icon">📜</span>
+            <span>Constitution</span>
           </Link>
           <a
             className="pillBtn"
@@ -47,37 +48,55 @@ export default function AboutUs() {
             target="_blank"
             rel="noreferrer"
           >
-            WhatsApp Guidelines
+            <span className="pillBtn__icon">💬</span>
+            <span>WhatsApp Guidelines</span>
           </a>
         </section>
 
         {/* Text */}
         <section className="aboutBox">
-          <p>
-            ULAN is a non governmental organization basing in Norway that carries out charitable socioeconomic
-            developments in Liberia through five thematic areas; Health, Education, Agriculture, Microfinance,
-            and Emergency Relief in Liberia ( commonly known as the HEAMER PROJECTS). The nonprofit charitable
-            organization, which is run by Liberians residing in the Kingdom of norway and Liberia respectively
-            was established in 2005 in the Norwegian city of Kongsberg.
-          </p>
+          <div className="aboutBox__icon">ℹ️</div>
+          <div className="aboutBox__content">
+            <h2 className="aboutBox__title">Who We Are</h2>
+            <p className="aboutBox__text">
+              ULAN is a non governmental organization based in Norway that carries out charitable socioeconomic
+              developments in Liberia through five thematic areas: Health, Education, Agriculture, Microfinance,
+              and Emergency Relief in Liberia (commonly known as the <strong>HEAMER PROJECTS</strong>).
+            </p>
+            <p className="aboutBox__text">
+              The nonprofit charitable organization, which is run by Liberians residing in the Kingdom of Norway
+              and Liberia respectively, was established in 2005 in the Norwegian city of Kongsberg.
+            </p>
+          </div>
         </section>
 
         {/* EXECUTIVES */}
-        <h2 className="execs__title">THE EXECUTIVES</h2>
-        <section className="execs">
-          {executives.map((x) => (
-            <div key={x.id} className="execs__card">
-              <img
-                src={x.photoUrl ?? ANON_AVATAR}
-                className="execs__avatar"
-                alt={x.name}
-                loading="lazy"
-              />
-              {x.title && <div className="execs__role">{x.title}</div>}
-              <div className="execs__name">{x.name}</div>
-            </div>
-          ))}
-        </section>
+        <div className="execsSection">
+          <h2 className="execs__title">
+            <span className="execs__titleIcon">👥</span>
+            The Executives
+          </h2>
+          <section className="execs">
+            {executives.map((x, idx) => (
+              <div
+                key={x.id}
+                className="execs__card"
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                <div className="execs__avatarWrap">
+                  <img
+                    src={x.photoUrl ?? ANON_AVATAR}
+                    className="execs__avatar"
+                    alt={x.name}
+                    loading="lazy"
+                  />
+                </div>
+                {x.title && <div className="execs__role">{x.title}</div>}
+                <div className="execs__name">{x.name}</div>
+              </div>
+            ))}
+          </section>
+        </div>
       </main>
 
       <Footer />
@@ -87,21 +106,57 @@ export default function AboutUs() {
 }
 
 const css = `
-.about{min-height:100vh;background:#fff}
-.aboutWrap{width:min(1100px,94vw);margin:0 auto;padding:24px 0 50px}
+.about{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  background:
+    radial-gradient(1000px 600px at 20% 0%, rgba(21,178,169,0.08), transparent 60%),
+    radial-gradient(900px 520px at 80% 10%, rgba(147,197,253,0.1), transparent 60%),
+    #fff;
+}
 
-.aboutHero{margin-top:8px}
+.aboutWrap{
+  flex:1;
+  width:min(1100px,94vw);
+  margin:0 auto;
+  padding:20px 0 40px;
+}
+
+@media (min-width: 640px) {
+  .aboutWrap{padding:24px 0 50px;}
+}
+
+.aboutHero{
+  margin-top:8px;
+  animation:fadeInDown 0.6s ease;
+}
+
+@keyframes fadeInDown{
+  from{opacity:0;transform:translateY(-20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
 .aboutHero__inner{
-background:#1e2f53;
+  background:linear-gradient(135deg, #1e2f53 0%, #16254a 100%);
   border:2px solid #0e1f3b;
-  border-radius:14px;
-  min-height:140px;
-  display:grid;place-items:center;
+  border-radius:12px;
+  min-height:120px;
+  display:grid;
+  place-items:center;
   color:#cfe0fa;
-  box-shadow:0 6px 18px rgba(12,18,32,.2);
-  overflow: hidden;
-  height: 240px;
+  box-shadow:0 10px 30px rgba(12,18,32,0.2);
+  overflow:hidden;
+  height:160px;
+}
+
+@media (min-width: 640px) {
+  .aboutHero__inner{
+    border-radius:14px;
+    min-height:140px;
+    height:240px;
   }
+}
 
 .aboutHero__img{
   width:100%;
@@ -110,80 +165,311 @@ background:#1e2f53;
   background:#fff;
   display:block;
 }
-.aboutHero__titleWrap{
-  position:absolute;
-  left:50%;
-  bottom:-20px;
-  transform:translateX(-50%);
-  background:#fff;
-  border:2px solid #0e1f3b;
-  border-radius:10px;
-  padding:10px 24px;
-  min-width:min(520px, 90vw);
-  text-align:center;
-}
+
 .aboutHero__title{
   position:relative;
   width:min(620px,92%);
-  margin:-32px auto 0;
+  margin:-24px auto 0;
   background:#fff;
   border:2px solid #0e1f3b;
-  border-radius:10px;
-  padding:18px 24px;
+  border-radius:8px;
+  padding:12px 16px;
   text-align:center;
   font-weight:800;
-  font-size:24px;
-  box-shadow:0 6px 18px rgba(12,18,32,.18);
+  font-size:18px;
+  box-shadow:0 6px 18px rgba(12,18,32,0.18);
+}
+
+@media (min-width: 640px) {
+  .aboutHero__title{
+    margin:-32px auto 0;
+    border-radius:10px;
+    padding:18px 24px;
+    font-size:24px;
+  }
 }
 
 .aboutBtns{
   display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin:46px 0 16px;
+  flex-direction:column;
+  gap:10px;
+  margin:40px 0 20px;
 }
+
+@media (min-width: 640px) {
+  .aboutBtns{
+    flex-direction:row;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin:46px 0 20px;
+  }
+}
+
 .pillBtn{
-  display:inline-block;
-  padding:10px 18px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:12px 16px;
   border-radius:10px;
-  background:#0e1f3b;
+  background:linear-gradient(135deg, #0e1f3b 0%, #16254a 100%);
   color:#fff;
   text-decoration:none;
-  font-weight:800;
+  font-weight:700;
   font-size:13px;
+  transition:all 0.3s ease;
+  box-shadow:0 4px 12px rgba(14,31,59,0.3);
+  border:1px solid rgba(255,255,255,0.1);
+}
+
+@media (min-width: 640px) {
+  .pillBtn{
+    padding:12px 20px;
+    font-size:14px;
+  }
+}
+
+.pillBtn:hover{
+  transform:translateY(-3px);
+  box-shadow:0 8px 20px rgba(14,31,59,0.4);
+  background:linear-gradient(135deg, #16254a 0%, #1e3a5f 100%);
+}
+
+.pillBtn__icon{
+  font-size:16px;
+}
+
+@media (min-width: 640px) {
+  .pillBtn__icon{font-size:18px;}
 }
 
 .aboutBox{
-  background:#0e1f3b;
+  background:linear-gradient(135deg, #0e1f3b 0%, #16254a 100%);
   color:#eaf2ff;
   border-radius:12px;
-  padding:18px 20px;
-  box-shadow:0 14px 30px rgba(0,0,0,0.12);
+  padding:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.15);
+  border:1px solid rgba(255,255,255,0.1);
+  animation:slideUp 0.5s ease;
+  animation-delay:0.2s;
+  animation-fill-mode:both;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+@media (min-width: 640px) {
+  .aboutBox{
+    flex-direction:row;
+    padding:24px 28px;
+    gap:20px;
+  }
+}
+
+@keyframes slideUp{
+  from{opacity:0;transform:translateY(30px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.aboutBox__icon{
+  font-size:40px;
+  flex-shrink:0;
+  text-align:center;
+}
+
+@media (min-width: 640px) {
+  .aboutBox__icon{
+    font-size:48px;
+    text-align:left;
+  }
+}
+
+.aboutBox__content{
+  flex:1;
+}
+
+.aboutBox__title{
+  font-size:18px;
+  font-weight:800;
+  margin:0 0 12px;
+  color:#fff;
+}
+
+@media (min-width: 640px) {
+  .aboutBox__title{
+    font-size:20px;
+    margin:0 0 16px;
+  }
+}
+
+.aboutBox__text{
+  margin:0 0 12px;
+  line-height:1.6;
+  font-size:14px;
+}
+
+@media (min-width: 640px) {
+  .aboutBox__text{
+    font-size:15px;
+    margin:0 0 16px;
+  }
+}
+
+.aboutBox__text:last-child{
+  margin-bottom:0;
+}
+
+.aboutBox__text strong{
+  color:#6ee7b7;
+  font-weight:700;
+}
+
+.execsSection{
+  margin-top:32px;
+  animation:slideUp 0.5s ease;
+  animation-delay:0.3s;
+  animation-fill-mode:both;
+}
+
+@media (min-width: 640px) {
+  .execsSection{margin-top:40px;}
 }
 
 .execs__title{
-  margin:26px 0 14px;
+  margin:0 0 20px;
   text-align:center;
   font-weight:900;
-  letter-spacing:.06em;
-  font-size:13px;
+  letter-spacing:0.06em;
+  font-size:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  color:#0e1f3b;
+}
+
+@media (min-width: 640px) {
+  .execs__title{
+    font-size:18px;
+    margin:0 0 24px;
+  }
+}
+
+.execs__titleIcon{
+  font-size:22px;
+}
+
+@media (min-width: 640px) {
+  .execs__titleIcon{font-size:26px;}
 }
 
 .execs{
-  border:2px solid #0e1f3b;
+  background:linear-gradient(135deg, #0e1f3b 0%, #16254a 100%);
+  border:2px solid rgba(255,255,255,0.1);
   border-radius:12px;
-  padding:18px 16px;
+  padding:16px 12px;
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:22px 26px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:20px 16px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.15);
 }
-@media (max-width: 960px){ .execs{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
-@media (max-width: 700px){ .execs{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
-.execs__card{display:grid;justify-items:center;text-align:center}
-.execs__avatar{
-  width:110px;height:110px;border-radius:999px;object-fit:cover;border:2px solid #0e1f3b;
+@media (min-width: 640px) {
+  .execs{
+    padding:20px 16px;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:24px 20px;
+  }
 }
-.execs__role{margin-top:10px;font-size:12px;letter-spacing:.02em;opacity:.85}
-.execs__name{margin-top:6px;font-weight:800}
+
+@media (min-width: 960px) {
+  .execs{
+    padding:24px 20px;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:28px 24px;
+  }
+}
+
+.execs__card{
+  display:grid;
+  justify-items:center;
+  text-align:center;
+  animation:cardFadeIn 0.5s ease;
+  animation-fill-mode:both;
+  transition:transform 0.3s ease;
+}
+
+@keyframes cardFadeIn{
+  from{opacity:0;transform:translateY(20px) scale(0.9)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+.execs__card:hover{
+  transform:translateY(-8px);
+}
+
+.execs__avatarWrap{
+  position:relative;
+  margin-bottom:12px;
+}
+
+@media (min-width: 640px) {
+  .execs__avatarWrap{margin-bottom:14px;}
+}
+
+.execs__avatar{
+  width:90px;
+  height:90px;
+  border-radius:50%;
+  object-fit:cover;
+  border:3px solid rgba(255,255,255,0.2);
+  box-shadow:0 8px 20px rgba(0,0,0,0.3);
+  transition:all 0.3s ease;
+}
+
+@media (min-width: 640px) {
+  .execs__avatar{
+    width:110px;
+    height:110px;
+  }
+}
+
+.execs__card:hover .execs__avatar{
+  border-color:rgba(110,231,183,0.6);
+  box-shadow:0 12px 30px rgba(0,0,0,0.4);
+  transform:scale(1.05);
+}
+
+.execs__role{
+  margin-top:8px;
+  font-size:11px;
+  letter-spacing:0.02em;
+  opacity:0.85;
+  color:#6ee7b7;
+  font-weight:600;
+  text-transform:uppercase;
+}
+
+@media (min-width: 640px) {
+  .execs__role{
+    margin-top:10px;
+    font-size:12px;
+  }
+}
+
+.execs__name{
+  margin-top:6px;
+  font-weight:800;
+  color:#eaf2ff;
+  font-size:13px;
+  line-height:1.3;
+}
+
+@media (min-width: 640px) {
+  .execs__name{
+    margin-top:8px;
+    font-size:14px;
+  }
+}
 `;

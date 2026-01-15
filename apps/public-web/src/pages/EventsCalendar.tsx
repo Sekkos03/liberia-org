@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { API_BASE } from "../lib/events"; // <- denne finnes i ditt api.ts
-import Navbar from "../components/Navbar"; // hvis filen heter/ligger annerledes, oppdater path
+import { API_BASE } from "../lib/events";
+import Navbar from "../components/Navbar";
 import axios from "axios";
 import Footer from "../components/Footer";
 
@@ -13,11 +13,9 @@ type EventDto = {
   description?: string | null;
   location?: string | null;
   coverImageUrl?: string | null;
-  startAt: string; // ISO
+  startAt: string;
   endAt?: string | null;
 };
-
-
 
 type ViewMode = "month" | "list" | "day";
 
@@ -30,7 +28,6 @@ export default function EventsCalendar() {
   const [query, setQuery] = useState("");
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
-  // last events
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -83,31 +80,35 @@ export default function EventsCalendar() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       <Navbar />
 
-      <main className="max-w-6xl mx-auto px-4 pt-6 pb-16">
-        {/* Søk + kontroller */}
-        <form onSubmit={onSearch} className="flex items-center gap-3 border rounded-md px-3 py-2">
-          <span className="opacity-60">🔎</span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search for events"
-            className="flex-1 outline-none bg-transparent"
-          />
-          <button type="submit" className="px-4 py-1.5 rounded-md bg-[#1f2a44] text-white text-sm">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-2 sm:px-4 pt-4 sm:pt-6 pb-8 sm:pb-16">
+        {/* Search + Controls */}
+        <form onSubmit={onSearch} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 border rounded-md px-3 py-2">
+          <div className="flex items-center gap-2 flex-1">
+            <span className="opacity-60">🔎</span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search for events"
+              className="flex-1 outline-none bg-transparent text-sm"
+            />
+          </div>
+          
+          <button type="submit" className="px-4 py-2 rounded-md bg-[#1f2a44] text-white text-sm whitespace-nowrap">
             Find Events
           </button>
 
-          <div className="ml-auto flex items-center gap-1">
+          {/* Desktop Controls */}
+          <div className="hidden lg:flex items-center gap-1 ml-auto">
             <button
               type="button"
               onClick={() => {
                 setCurrent(startOfMonth(new Date()));
                 setSelectedDay(null);
               }}
-              className="px-3 py-1.5 text-sm rounded border hover:bg-gray-50"
+              className="px-3 py-1.5 text-sm rounded border hover:bg-gray-50 whitespace-nowrap"
             >
               This Month
             </button>
@@ -122,7 +123,7 @@ export default function EventsCalendar() {
             >
               ‹
             </button>
-            <div className="px-3 py-1.5 text-sm rounded border bg-white">
+            <div className="px-3 py-1.5 text-sm rounded border bg-white whitespace-nowrap">
               {current.toLocaleString(undefined, { month: "long", year: "numeric" })}
             </div>
             <button
@@ -151,10 +152,66 @@ export default function EventsCalendar() {
           </div>
         </form>
 
-        {/* Innhold */}
-        <section className="mt-6">
+        {/* Mobile Controls */}
+        <div className="lg:hidden mt-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCurrent(startOfMonth(new Date()));
+                setSelectedDay(null);
+              }}
+              className="px-3 py-1.5 text-sm rounded border hover:bg-gray-50 whitespace-nowrap"
+            >
+              This Month
+            </button>
+            
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrent(addMonths(current, -1));
+                  setSelectedDay(null);
+                }}
+                className="px-2 py-1.5 text-lg rounded border hover:bg-gray-50"
+                aria-label="Previous month"
+              >
+                ‹
+              </button>
+              <div className="px-3 py-1.5 text-sm rounded border bg-white whitespace-nowrap">
+                {current.toLocaleString(undefined, { month: "short", year: "numeric" })}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrent(addMonths(current, 1));
+                  setSelectedDay(null);
+                }}
+                className="px-2 py-1.5 text-lg rounded border hover:bg-gray-50"
+                aria-label="Next month"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+
+          <div className="flex rounded-md overflow-hidden border w-full">
+            <Toggle on={() => setView("list")} active={view === "list"}>
+              List
+            </Toggle>
+            <Toggle on={() => setView("month")} active={view === "month"}>
+              Month
+            </Toggle>
+            <Toggle on={() => setView("day")} active={view === "day"}>
+              Today
+            </Toggle>
+          </div>
+        </div>
+
+        {/* Content */}
+        <section className="mt-4 sm:mt-6">
           {loading && <div className="text-gray-500">Loading…</div>}
-          {err && <div className="text-red-600">Feil: {err}</div>}
+          {err && <div className="text-red-600">Error: {err}</div>}
 
           {!loading && !err && view === "month" && (
             <MonthView
@@ -184,25 +241,15 @@ export default function EventsCalendar() {
           )}
         </section>
 
-        <div className="mt-8 flex justify-end">
-          <button
-            type="button"
-            className="text-sm px-3 py-1.5 border rounded-md hover:bg-gray-50"
-            onClick={() => alert("ICS-feed kan kobles til her senere.")}
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+
+          <Link
+            to="/events"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#16254a] text-white shadow-lg hover:shadow-xl transition-transform duration-150 hover:-translate-y-0.5 w-full sm:w-auto"
           >
-            Subscribe to calendar ⤓
-          </button>
-    
-      </div>
-      <div className="flex justify-center">
-              <Link
-                to="/events"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#16254a] text-white shadow-lg hover:shadow-xl transition-transform duration-150 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#16254a]"
-                aria-label="Åpne kalender"
-              >
-                Back to Events
-              </Link>
-            </div>
+            Back to Events
+          </Link>
+        </div>
       </main>
 
       <Footer />
@@ -226,11 +273,21 @@ function MonthView({
   onSelectDay: (d: Date) => void;
 }) {
   const weekDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+  
   return (
     <div className="border rounded-lg overflow-hidden">
-      <div className="grid grid-cols-7 bg-gray-50 text-[11px] font-medium text-gray-500">
+      <div className="hidden sm:grid grid-cols-7 bg-gray-50 text-[11px] font-medium text-gray-500">
         {weekDays.map((w) => (
           <div key={w} className="px-3 py-2">
+            {w}
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile: Show abbreviated days */}
+      <div className="grid sm:hidden grid-cols-7 bg-gray-50 text-[10px] font-medium text-gray-500">
+        {["M", "T", "W", "T", "F", "S", "S"].map((w, i) => (
+          <div key={i} className="px-1 py-2 text-center">
             {w}
           </div>
         ))}
@@ -242,16 +299,21 @@ function MonthView({
           const dim = monthKey(d) !== currentMonthKey;
           const isSel = selectedDay && sameDay(d, selectedDay);
           const list = eventsByDay.get(k) ?? [];
+          
           return (
             <div
               key={k}
-              className={`h-28 border p-2 text-xs relative cursor-pointer ${
+              className={`h-16 sm:h-28 border p-1 sm:p-2 text-xs relative cursor-pointer ${
                 dim ? "bg-gray-50 text-gray-400" : ""
               } ${isSel ? "ring-2 ring-[#1f2a44]" : ""}`}
               onClick={() => onSelectDay(truncateDay(d))}
             >
-              <div className="absolute top-1 right-2 text-[11px] opacity-70">{d.getDate()}</div>
-              <div className="mt-5 flex flex-col gap-1">
+              <div className="absolute top-0.5 sm:top-1 right-1 sm:right-2 text-[10px] sm:text-[11px] opacity-70">
+                {d.getDate()}
+              </div>
+              
+              {/* Desktop: Show event details */}
+              <div className="hidden sm:flex mt-5 flex-col gap-1">
                 {list.slice(0, 3).map((e) => (
                   <Link
                     key={e.id}
@@ -263,6 +325,16 @@ function MonthView({
                 ))}
                 {list.length > 3 && (
                   <span className="text-[11px] text-gray-500">+{list.length - 3} more</span>
+                )}
+              </div>
+              
+              {/* Mobile: Show dot indicators */}
+              <div className="sm:hidden flex flex-wrap gap-0.5 mt-3 justify-center">
+                {list.slice(0, 4).map((_, i) => (
+                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#1f2a44]" />
+                ))}
+                {list.length > 4 && (
+                  <div className="text-[8px] text-gray-600">+</div>
                 )}
               </div>
             </div>
@@ -281,21 +353,24 @@ function ListView({ month, events }: { month: Date; events: EventDto[] }) {
         <Link
           key={e.id}
           to={`/events/${e.slug}`}
-          className="flex items-center gap-4 p-4 border rounded-lg hover:shadow"
+          className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:shadow"
         >
-          <div className="w-24 h-16 rounded bg-[#eaf1ff] grid place-items-center text-[#1f2a44] font-semibold">
-            <div className="leading-none text-2xl">{new Date(e.startAt).getDate()}</div>
+          <div className="w-full sm:w-24 h-12 sm:h-16 rounded bg-[#eaf1ff] grid place-items-center text-[#1f2a44] font-semibold">
+            <div className="leading-none text-xl sm:text-2xl">{new Date(e.startAt).getDate()}</div>
             <div className="text-[10px] uppercase">
               {new Date(e.startAt).toLocaleString(undefined, { month: "short" })}
             </div>
           </div>
-          <div className="flex-1">
-            <div className="font-medium">{e.title}</div>
-            <div className="text-sm text-gray-600">
+          
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm sm:text-base">{e.title}</div>
+            <div className="text-xs sm:text-sm text-gray-600 truncate">
               {timeOf(e.startAt)} · {new Date(e.startAt).toLocaleDateString()}{" "}
               {e.location ? `· ${e.location}` : ""}
             </div>
-            {e.summary && <p className="text-sm text-gray-600 line-clamp-2 mt-1">{e.summary}</p>}
+            {e.summary && (
+              <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 mt-1">{e.summary}</p>
+            )}
           </div>
         </Link>
       ))}
@@ -306,7 +381,7 @@ function ListView({ month, events }: { month: Date; events: EventDto[] }) {
 function DayView({ day, events }: { day: Date; events: EventDto[] }) {
   return (
     <div>
-      <div className="text-lg font-semibold">
+      <div className="text-base sm:text-lg font-semibold">
         {day.toLocaleDateString(undefined, {
           weekday: "long",
           day: "numeric",
@@ -314,15 +389,20 @@ function DayView({ day, events }: { day: Date; events: EventDto[] }) {
           year: "numeric",
         })}
       </div>
+      
       <div className="mt-3 space-y-3">
         {events.length === 0 && <div className="text-gray-500">No events for this date.</div>}
         {events.map((e) => (
-          <Link key={e.id} to={`/events/${e.slug}`} className="block p-4 border rounded-lg hover:shadow">
-            <div className="font-medium">{e.title}</div>
-            <div className="text-sm text-gray-600">
+          <Link
+            key={e.id}
+            to={`/events/${e.slug}`}
+            className="block p-3 sm:p-4 border rounded-lg hover:shadow"
+          >
+            <div className="font-medium text-sm sm:text-base">{e.title}</div>
+            <div className="text-xs sm:text-sm text-gray-600">
               {timeOf(e.startAt)} {e.location ? `· ${e.location}` : ""}
             </div>
-            {e.summary && <p className="text-sm text-gray-600 mt-1">{e.summary}</p>}
+            {e.summary && <p className="text-xs sm:text-sm text-gray-600 mt-1">{e.summary}</p>}
           </Link>
         ))}
       </div>
@@ -337,7 +417,7 @@ function Toggle(props: { active?: boolean; on: () => void; children: React.React
     <button
       type="button"
       onClick={props.on}
-      className={`px-3 py-1.5 text-sm ${
+      className={`flex-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm ${
         props.active ? "bg-[#1f2a44] text-white" : "bg-white hover:bg-gray-50"
       }`}
     >
@@ -354,41 +434,50 @@ function startOfMonth(d: Date) {
   x.setHours(0, 0, 0, 0);
   return x;
 }
+
 function startOfWeek(d: Date) {
   const x = new Date(d);
-  const day = (x.getDay() + 6) % 7; // 0=Mon
+  const day = (x.getDay() + 6) % 7;
   x.setDate(x.getDate() - day);
   x.setHours(0, 0, 0, 0);
   return x;
 }
+
 function addDays(d: Date, n: number) {
   const x = new Date(d);
   x.setDate(x.getDate() + n);
   return x;
 }
+
 function addMonths(d: Date, n: number) {
   const x = new Date(d);
   x.setMonth(x.getMonth() + n);
   return x;
 }
+
 function truncateDay(d: Date) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
   return x;
 }
+
 function sameDay(a: Date, b: Date) {
   return truncateDay(a).getTime() === truncateDay(b).getTime();
 }
+
 function sameMonth(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
+
 function dayKey(d: Date) {
   const x = truncateDay(d);
   return `${x.getFullYear()}-${x.getMonth() + 1}-${x.getDate()}`;
 }
+
 function monthKey(d: Date) {
   return `${d.getFullYear()}-${d.getMonth() + 1}`;
 }
+
 function timeOf(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
