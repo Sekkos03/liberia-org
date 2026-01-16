@@ -436,7 +436,6 @@ function ViewMemberModal({
           <ViewField label="City" value={member.city} />
           <ViewField label="Phone" value={member.phone} />
           <ViewField label="Email" value={member.email} />
-          <ViewField label="Occupation" value={member.occupation} />
           <ViewField label="Vipps Reference" value={member.vippsReference} />
           <ViewField label="Vipps Amount" value={member.vippsAmountNok ? `${member.vippsAmountNok} NOK` : undefined} />
           <ViewField label="Joined" value={member.createdAt ? fmtDate(member.createdAt) : undefined} />
@@ -557,7 +556,6 @@ function EditMemberModal({
     city: "",
     phone: "",
     email: "",
-    occupation: "",
     vippsReference: "",
     vippsAmountNok: undefined,
     ...initial,
@@ -600,7 +598,6 @@ function EditMemberModal({
           <Field label="City" value={m.city ?? ""} onChange={set("city")} />
           <Field label="Phone" value={m.phone ?? ""} onChange={set("phone")} />
           <Field label="Email *" type="email" value={m.email ?? ""} onChange={set("email")} />
-          <Field label="Occupation" value={m.occupation ?? ""} onChange={set("occupation")} />
           <Field label="Vipps Reference" value={m.vippsReference ?? ""} onChange={set("vippsReference")} />
           <Field label="Vipps Amount (NOK)" type="number" value={m.vippsAmountNok?.toString() ?? ""} onChange={setNumber("vippsAmountNok")} />
         </div>

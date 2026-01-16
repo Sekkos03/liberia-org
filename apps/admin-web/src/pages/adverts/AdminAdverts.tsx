@@ -407,10 +407,10 @@ function AdvertModal({
                   onChange={(e) => applyDuration(e.target.value as any)}
                   className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 text-sm outline-none"
                 >
-                  <option value="">Manual</option>
-                  <option value="1d">1 day</option>
-                  <option value="7d">7 days</option>
-                  <option value="30d">30 days</option>
+                  <option className="text-black" value="">Manual</option>
+                  <option className="text-black" value="1d">1 day</option>
+                  <option className="text-black"value="7d">7 days</option>
+                  <option className="text-black" value="30d">30 days</option>
                 </select>
               </div>
             </div>
