@@ -16,7 +16,8 @@ public class CorsConfig implements WebMvcConfigurer {
                         "http://localhost:5175",
                         "http://localhost:3000",
                         "https://liberia-org-admin.vercel.app",
-                        "https://liberia-org-public.vercel.app"
+                        "https://liberia-org-public.vercel.app",
+                        "https://www.ulancommunity.org"
                 )
                 .allowedMethods("GET","POST","PUT","PATCH","DELETE","OPTIONS")
                 .allowedHeaders("*")
@@ -31,7 +32,8 @@ public class CorsConfig implements WebMvcConfigurer {
                         "http://localhost:5175",
                         "http://localhost:3000",
                         "https://liberia-org-admin.vercel.app",
-                        "https://liberia-org-public.vercel.app"
+                        "https://liberia-org-public.vercel.app",
+                        "https://www.ulancommunity.org"
                 )
                 .allowedMethods("GET","OPTIONS")
                 .allowedHeaders("*")
