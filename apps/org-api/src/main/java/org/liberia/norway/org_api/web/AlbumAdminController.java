@@ -197,7 +197,33 @@ public class AlbumAdminController {
         item.setAlbum(null);
 
         albumRepo.save(album);
+
     }
+
+    // ---------- Delete (ADMIN) ----------
+@DeleteMapping("/{id}")
+@Transactional
+@ResponseStatus(HttpStatus.NO_CONTENT)
+public void delete(@PathVariable Long id) {
+    Album album = albumRepo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Album not found"));
+    
+    // Optional: Delete associated media files
+    if (album.getItems() != null && !album.getItems().isEmpty()) {
+        for (Album.MediaItem item : album.getItems()) {
+            if (item.getFileName() != null) {
+                try {
+                    fileStorageService.delete(item.getFileName(), "media2");
+                } catch (Exception e) {
+                    // Log but don't fail the delete operation
+                    System.err.println("Failed to delete file: " + item.getFileName());
+                }
+            }
+        }
+    }
+    
+    albumRepo.delete(album);
+}
 
     // --- last opp filer til album (admin) ---
     @PostMapping(path = "/{id}/items", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
