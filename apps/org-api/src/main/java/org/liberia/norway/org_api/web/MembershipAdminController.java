@@ -7,10 +7,14 @@ import java.time.temporal.ChronoUnit;
 import org.liberia.norway.org_api.model.Member;
 import org.liberia.norway.org_api.model.Member.Status;
 import org.liberia.norway.org_api.repository.MemberRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -27,10 +31,14 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/admin/membership")
 public class MembershipAdminController {
 
-  private final MemberRepository memrepo;
+  private static final Logger log = LoggerFactory.getLogger(MembershipAdminController.class);
 
-  public MembershipAdminController(MemberRepository memrepo) {
+  private final MemberRepository memrepo;
+  private final JavaMailSender mailSender;
+
+  public MembershipAdminController(MemberRepository memrepo, JavaMailSender mailSender) {
     this.memrepo = memrepo;
+    this.mailSender = mailSender;
   }
 
   /* ----------------------------- MEMBERS ----------------------------- */
@@ -231,10 +239,14 @@ public class MembershipAdminController {
     a.setDeleteAt(null);
 
     memrepo.save(a);
+    
+    // Send acceptance email
+    sendAcceptanceEmail(a);
+
     return ResponseEntity.ok(ApplicationDTO.from(a));
   }
 
-  public record RejectRequest(Integer daysToKeep) {}
+  public record RejectRequest(Integer daysToKeep, String reason) {}
 
   @PatchMapping("/applications/{id}/reject")
   public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody(required = false) RejectRequest req) {
@@ -245,12 +257,17 @@ public class MembershipAdminController {
     }
 
     int days = (req != null && req.daysToKeep != null && req.daysToKeep > 0) ? req.daysToKeep : 365;
+    String reason = (req != null && req.reason != null && !req.reason.isBlank()) ? req.reason.trim() : null;
 
     a.setStatus(Status.REJECTED);
     a.setHandledAt(Instant.now());
     a.setDeleteAt(Instant.now().plus(days, ChronoUnit.DAYS));
 
     memrepo.save(a);
+    
+    // Send rejection email
+    sendRejectionEmail(a, reason);
+
     return ResponseEntity.ok(ApplicationDTO.from(a));
   }
 
@@ -268,5 +285,97 @@ public class MembershipAdminController {
 
     memrepo.save(a);
     return ResponseEntity.ok(ApplicationDTO.from(a));
+  }
+
+  /* --------------------------- EMAIL METHODS --------------------------- */
+
+  private void sendAcceptanceEmail(Member member) {
+    if (member.getEmail() == null || member.getEmail().isBlank()) {
+      log.warn("Cannot send acceptance email: no email address for member id={}", member.getId());
+      return;
+    }
+
+    try {
+      String to = member.getEmail().trim();
+      String subject = "Welcome to ULAN - Membership Approved!";
+
+      String body = """
+          Dear %s %s,
+
+          Congratulations! We are pleased to inform you that your membership application to the Union of Liberians Association in Norway (ULAN) has been approved.
+
+          You are now an official member of ULAN!
+
+          We look forward to seeing you at our upcoming events and activities.
+
+          If you have any questions, please don't hesitate to contact us.
+
+          Welcome to the ULAN family!
+
+          Kind regards,
+          ULAN Administration
+          Union of Liberians Association in Norway
+          """.formatted(
+              member.getFirstName() == null ? "" : member.getFirstName(),
+              member.getLastName() == null ? "" : member.getLastName()
+          );
+
+      SimpleMailMessage msg = new SimpleMailMessage();
+      msg.setTo(to);
+      msg.setSubject(subject);
+      msg.setText(body);
+
+      mailSender.send(msg);
+      log.info("Acceptance email sent to: {}", to);
+    } catch (Exception e) {
+      log.error("Failed to send acceptance email to member id={}", member.getId(), e);
+    }
+  }
+
+  private void sendRejectionEmail(Member member, String reason) {
+    if (member.getEmail() == null || member.getEmail().isBlank()) {
+      log.warn("Cannot send rejection email: no email address for member id={}", member.getId());
+      return;
+    }
+
+    try {
+      String to = member.getEmail().trim();
+      String subject = "ULAN Membership Application Status";
+
+      String reasonText = (reason != null && !reason.isBlank()) 
+          ? "\n\nReason: " + reason + "\n"
+          : "";
+
+      String body = """
+          Dear %s %s,
+
+          Thank you for your interest in becoming a member of the Union of Liberians Association in Norway (ULAN).
+
+          After reviewing your application, we regret to inform you that we are unable to approve your membership at this time.%s
+          If you believe this decision was made in error or if you have additional information that may support your application, please feel free to contact our administration team.
+
+          You are welcome to reapply in the future.
+
+          Thank you for your understanding.
+
+          Kind regards,
+          ULAN Administration
+          Union of Liberians Association in Norway
+          """.formatted(
+              member.getFirstName() == null ? "" : member.getFirstName(),
+              member.getLastName() == null ? "" : member.getLastName(),
+              reasonText
+          );
+
+      SimpleMailMessage msg = new SimpleMailMessage();
+      msg.setTo(to);
+      msg.setSubject(subject);
+      msg.setText(body);
+
+      mailSender.send(msg);
+      log.info("Rejection email sent to: {}", to);
+    } catch (Exception e) {
+      log.error("Failed to send rejection email to member id={}", member.getId(), e);
+    }
   }
 }
