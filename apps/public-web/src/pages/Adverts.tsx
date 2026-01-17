@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { fetchAdverts as loadAdverts, type Advert } from "../lib/adverts";
 import { toPublicUrl } from "../lib/media";
+import DonationPopup from "../components/Donationpopup";
 
 const SLIDE_IMAGE_MS = 14000;
 
@@ -284,7 +285,7 @@ export default function AdvertsPage() {
           </div>
         </section>
       </main>
-
+      <DonationPopup />
       <Footer />
 
       {/* Global Lightbox Modal */}

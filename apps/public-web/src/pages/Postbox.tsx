@@ -2,6 +2,7 @@ import { type FormEvent, useMemo, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { submitSuggestion } from "../lib/postbox";
+import DonationPopup from "../components/Donationpopup";
 
 const MAX_MSG = 2000;
 
@@ -227,7 +228,7 @@ export default function Postbox() {
           </div>
         </section>
       </main>
-
+      <DonationPopup />
       <Footer />
       <style>{css}</style>
     </div>

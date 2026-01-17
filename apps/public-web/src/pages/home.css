@@ -3,74 +3,172 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* === Hero med bakgrunn === */
 .home-hero {
-  flex: 1;                        /* fyll høyden mellom navbar og footer */
+  flex: 1;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-
-  padding: 6rem 1rem 7rem;        /* god luft over/under */
+  padding: 2rem 1rem;
+  min-height: calc(100vh - 140px); /* Subtract navbar and footer height */
+  width: 100%;
 
   /* bakgrunnsbildet ditt */
   background-image: url("/src/assets/ulan-bakgrunn.png");
   background-size: cover;
-  background-position: center top;
+  background-position: center center;
   background-repeat: no-repeat;
+  background-color: #0f2847; /* Fallback color matching the image */
 }
 
-/* diskret overlay for lesbarhet (fjern ved å sette opacity til 0 eller ta bort hele) */
+/* Ensure full image is visible on all screen sizes */
+@media (min-width: 768px) {
+  .home-hero {
+    background-size: cover;
+    background-position: center center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-hero {
+    background-size: cover;
+    background-position: center center;
+  }
+}
+
+@media (min-width: 1400px) {
+  .home-hero {
+    background-size: cover;
+    background-position: center center;
+  }
+}
+
+@media (min-width: 1920px) {
+  .home-hero {
+    background-size: cover;
+    background-position: center center;
+  }
+}
+
+/* diskret overlay for lesbarhet */
 .home-hero::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(7, 17, 33, 0.10);
+  background: rgba(7, 17, 33, 0.05);
   pointer-events: none;
 }
 
 .hero-inner {
-  position: relative; /* over overlay */
+  position: relative;
   z-index: 1;
   max-width: 900px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0 1rem;
+}
+
+/* Mobile: Stack everything vertically centered */
+@media (max-width: 767px) {
+  .hero-inner {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}
+
+/* Tablet and up: Position title above logo area, buttons below */
+@media (min-width: 768px) {
+  .hero-inner {
+    margin-top: -8rem; /* Move content up to position title above logo */
+  }
+}
+
+/* Large screens: Adjust spacing */
+@media (min-width: 1200px) {
+  .hero-inner {
+    margin-top: -6rem;
+  }
 }
 
 /* Typografi */
 .hero-title {
   color: #fff;
   margin: 0;
-  font-weight: 800;
-  line-height: 1.15;
-  font-size: clamp(2rem, 1.2rem + 3.2vw, 3.5rem);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  font-weight: 900;
+  line-height: 1.1;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.05em;
 }
 
 .hero-subtitle {
   color: #eaf0ff;
-  margin-top: 0.75rem;
-  font-size: clamp(1rem, 0.9rem + 0.6vw, 1.25rem);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  margin: 0;
+  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  font-weight: 600;
+  max-width: 600px;
+  line-height: 1.5;
+  padding: 0 1rem;
 }
 
 /* Knapper under hero-teksten */
 .actions {
-  margin-top: 1.25rem;
+  margin-top: 2rem;
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+  padding-top: 15rem; /* Space to position buttons below logo */
 }
 
-/* Sørg for at en eventuell “fixed” footer ikke kolliderer */
-footer, .site-footer { position: static; }
+/* Mobile: Less spacing */
+@media (max-width: 767px) {
+  .actions {
+    padding-top: 2rem;
+    margin-top: 1.5rem;
+  }
+}
 
+/* Tablet: Adjust spacing */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .actions {
+    padding-top: 20rem;
+  }
+}
+
+/* Large screens: More spacing */
+@media (min-width: 1200px) {
+  .actions {
+    padding-top: 18rem;
+  }
+}
+
+/* Extra large screens */
+@media (min-width: 1600px) {
+  .actions {
+    padding-top: 22rem;
+  }
+}
+
+/* Sørg for at en eventuell "fixed" footer ikke kolliderer */
+footer, .site-footer { 
+  position: static; 
+}
 
 /* === Knappestiler (synlige, interaktive, animert) === */
 :root{
-  --accent-500:#3b82f6;   /* blå */
+  --accent-500:#3b82f6;
   --accent-600:#2563eb;
   --accent-700:#1d4ed8;
   --on-accent:#fff;
@@ -83,17 +181,18 @@ footer, .site-footer { position: static; }
   justify-content:center;
   gap:.5rem;
 
-  padding:.85rem 1.2rem;
+  padding:1rem 1.75rem;
   border-radius:9999px;
   font-weight:700;
   letter-spacing:.01em;
   text-decoration:none;
+  font-size: clamp(0.95rem, 1.5vw, 1.05rem);
 
   border:2px solid transparent;
   background:var(--btn-bg, transparent);
   color:var(--btn-fg, #fff);
 
-  box-shadow:0 6px 18px rgba(0,0,0,.25);
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
   transform:translateY(0);
   transition:
     transform .18s ease,
@@ -101,33 +200,53 @@ footer, .site-footer { position: static; }
     background .18s ease,
     color .18s ease,
     border-color .18s ease;
-  isolation:isolate; /* for glans-lag */
+  isolation:isolate;
+  min-width: 180px;
 }
 
-/* === Mer "wow" på knappene === */
+/* Mobile: Smaller buttons */
+@media (max-width: 640px) {
+  .btn {
+    padding: 0.85rem 1.5rem;
+    min-width: 160px;
+  }
+}
 
-/* Gradient flyter litt på primary */
+/* Primary button gradient */
 .btn--primary{
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
   background-size: 200% 200%;
   animation: gradientShift 7s ease infinite;
 }
+
 @keyframes gradientShift{
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-/* Litt mer "pop" på hover */
+/* Ghost button */
+.btn--ghost{
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(8px);
+}
+
+/* Hover effects */
 .btn:hover{
-  transform: translateY(-3px) scale(1.02);
+  transform: translateY(-3px) scale(1.03);
 }
 
-/* Glød på primary ved hover */
 .btn--primary:hover{
-  box-shadow: 0 14px 34px rgba(0,0,0,.42), 0 0 0 1px rgba(255,255,255,.08);
+  box-shadow: 0 14px 34px rgba(59, 130, 246, 0.5), 0 0 0 1px rgba(255,255,255,.08);
 }
 
-/* Ripple ved klikk (CSS-only) */
+.btn--ghost:hover{
+  border-color: rgba(255,255,255,.75);
+  background: rgba(255,255,255,.16);
+}
+
+/* Ripple effect */
 .btn::after{
   content:"";
   position:absolute;
@@ -138,21 +257,24 @@ footer, .site-footer { position: static; }
   transform: scale(0.6);
   pointer-events:none;
 }
+
 .btn:active::after{
   animation: ripple .55s ease-out;
 }
+
 @keyframes ripple{
   0%   { opacity:.25; transform:scale(.6); }
   100% { opacity:0;   transform:scale(1.35); }
 }
 
-/* Litt flyt på ghost-knappen når du hover */
-.btn--ghost:hover{
-  border-color: rgba(255,255,255,.75);
-  background: rgba(255,255,255,.14);
-}
-
-/* Mindre bevegelse for de som ønsker det */
+/* Accessibility */
 @media (prefers-reduced-motion: reduce){
   .btn--primary{ animation: none !important; }
+  .btn:hover { transform: none !important; }
+}
+
+/* Focus states for accessibility */
+.btn:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 3px;
 }

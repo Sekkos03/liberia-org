@@ -12,6 +12,7 @@ import Constitution from "./pages/Constitution";
 import WhatsAppGuidelines from "./pages/WhatsAppGuidelines";
 import Albums from "./pages/Albums";
 import AlbumDetail from "./pages/AlbumDetail";
+import Donate from "./pages/Donate";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/about/whatsapp-guidelines" element={<WhatsAppGuidelines />} />
         <Route path="/about/constitution" element={<Constitution />} />
         <Route path="/albums/:slug" element={<AlbumDetail />} />
+        <Route path="/donate" element={<Donate />} />
 
       </Routes>
     </QueryClientProvider>

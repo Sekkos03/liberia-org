@@ -14,6 +14,7 @@ const links: NavItem[] = [
   { to: "/albums", label: "Albums" },
   { to: "/post", label: "Post Box" },
   { to: "/about", label: "About us" },
+  { to: "/donate", label: "Donate" },
   { to: "#contact", label: "Contact" },
 ];
 

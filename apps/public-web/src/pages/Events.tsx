@@ -7,6 +7,7 @@ import Footer from "../components/Footer";
 import PlannedActivities from "../components/PlannedActivities";
 import { toPublicUrl } from "../lib/media";
 import liberianHeadlines from "../assets/Liberian Headlines.png";
+import DonationPopup from "../components/Donationpopup";
 
 export type EventDto = {
   id: number;
@@ -98,7 +99,7 @@ export default function Events() {
           <PlannedActivities /> 
         </section>
       </main>
-
+      <DonationPopup />
       <Footer />
       <style>{css}</style>
     </div>

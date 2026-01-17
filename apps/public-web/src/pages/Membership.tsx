@@ -8,6 +8,7 @@ import {
   submitMembership,
   type MembershipForm,
 } from "../lib/membership";
+import DonationPopup from "../components/Donationpopup";
 
 const VIPPS_NUMBER = "75356";
 const VIPPS_RECEIVER = "ULAN";
@@ -342,7 +343,7 @@ export default function Membership() {
           )}
         </div>
       </div>
-
+      <DonationPopup />
       <Footer />
     </div>
   );

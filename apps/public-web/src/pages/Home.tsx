@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import "./home.css";
+import DonationPopup from "../components/Donationpopup";
 
 export default function Home() {
   return (
@@ -19,7 +20,7 @@ export default function Home() {
           </div>
         </div>
       </main>
-
+      <DonationPopup />
       <Footer />
     </div>
   );

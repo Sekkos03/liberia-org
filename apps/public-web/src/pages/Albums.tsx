@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { listPublicAlbums, type PublicAlbum } from "../lib/albums";
 import liberianHeadlines from "../assets/Liberian Headlines.png";
+import DonationPopup from "../components/Donationpopup";
 
 function FolderIcon({ className = "" }: { className?: string }) {
   return (
@@ -98,7 +99,8 @@ export default function Photos() {
             ))}
           </ul>
         )}
-      </main>
+      </main>¨
+      <DonationPopup />
       <Footer />
       <style>{css}</style>
     </div>
