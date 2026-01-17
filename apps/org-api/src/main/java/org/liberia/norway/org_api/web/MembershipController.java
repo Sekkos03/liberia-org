@@ -29,7 +29,7 @@ import jakarta.transaction.Transactional;
 public class MembershipController {
   private static final Logger log = LoggerFactory.getLogger(MembershipController.class);
   
-  private static final int MEMBERSHIP_FEE_NOK = 300;
+  private static final int MEMBERSHIP_FEE_NOK = 245;
 
 private final org.springframework.mail.javamail.JavaMailSender mailSender;
 

@@ -2,7 +2,7 @@ const LOCAL_API = "http://localhost:8080";
 const PROD_API = "https://liberia-org.onrender.com";
 const API_BASE = window.location.hostname === "localhost" ? LOCAL_API : PROD_API;
 
-export const MEMBERSHIP_FEE_NOK = 300;
+export const MEMBERSHIP_FEE_NOK = 245;
 
 export type MembershipForm = {
   firstName: string;
