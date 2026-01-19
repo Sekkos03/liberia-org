@@ -129,10 +129,10 @@ export default function Navbar() {
           className={[
             "md:hidden overflow-hidden border-t border-white/10",
             "transition-all duration-300 ease-out",
-            open ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+            open ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0",
           ].join(" ")}
         >
-          <div className="flex flex-col px-4 py-3 space-y-1">
+          <div className="flex flex-col px-4 py-2">
             {links.map((l) =>
               l.label === "Contact" ? (
                 <button
@@ -140,7 +140,7 @@ export default function Navbar() {
                   type="button"
                   onClick={openContact}
                   className={[
-                    "text-left py-2 px-3 rounded-lg",
+                    "text-left py-1.5 px-3 rounded-lg",
                     "text-white/95",
                     "transition-all duration-200",
                     "hover:bg-white/10 hover:text-emerald-200 active:scale-[0.99]",
@@ -156,7 +156,7 @@ export default function Navbar() {
                   to={l.to}
                   onClick={() => setOpen(false)}
                   className={[
-                    "block py-2 px-3 rounded-lg",
+                    "block py-1.5 px-3 rounded-lg",
                     "transition-all duration-200",
                     "hover:bg-white/10 hover:text-emerald-200 active:scale-[0.99]",
                     pathname === l.to ? "bg-white/10 text-emerald-300 font-medium" : "text-white/95",
