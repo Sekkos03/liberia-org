@@ -99,7 +99,7 @@ export default function Photos() {
             ))}
           </ul>
         )}
-      </main>¨
+      </main>
       <DonationPopup />
       <Footer />
       <style>{css}</style>

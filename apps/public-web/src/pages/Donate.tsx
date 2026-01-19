@@ -11,8 +11,6 @@ import {
 } from "lucide-react";
 import vippsImg from "../assets/vipps.jpeg";
 
-type DonationAmount = 100 | 250 | 500 | 1000 | 2500 | 5000;
-
 const BANK_INFO = {
   // Contact Info
   phone: "+47 966 94 706",
@@ -31,12 +29,8 @@ const BANK_INFO = {
 };
 
 export default function Donate() {
-  const [selectedAmount, setSelectedAmount] = useState<DonationAmount | null>(null);
-  const [customAmount, setCustomAmount] = useState("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showVipps, setShowVipps] = useState(false);
-
-  const amounts: DonationAmount[] = [100, 250, 500, 1000, 2500, 5000];
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -51,8 +45,6 @@ export default function Donate() {
   const openContactModal = () => {
     window.dispatchEvent(new Event("contact:open"));
   };
-
-  const finalAmount = customAmount ? Number(customAmount) : selectedAmount;
 
   return (
     <div className="donate-page">
@@ -74,60 +66,6 @@ export default function Donate() {
       </section>
 
       <main className="donate-main">
-        {/* Donation Amount Selection */}
-        <section className="amount-section">
-          <h2 className="section-title">
-            <Heart size={28} />
-            Choose Your Donation Amount
-          </h2>
-
-          <div className="amount-grid">
-            {amounts.map((amount) => (
-              <button
-                key={amount}
-                onClick={() => {
-                  setSelectedAmount(amount);
-                  setCustomAmount("");
-                }}
-                className={`amount-button ${selectedAmount === amount ? "amount-button--active" : ""}`}
-              >
-                <span className="amount-value">{amount}</span>
-                <span className="amount-currency">NOK</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="custom-amount">
-            <label className="custom-amount-label">Or enter a custom amount:</label>
-            <div className="custom-amount-input-wrapper">
-              <input
-                type="number"
-                min="1"
-                placeholder="Enter amount"
-                value={customAmount}
-                onChange={(e) => {
-                  setCustomAmount(e.target.value);
-                  setSelectedAmount(null);
-                }}
-                className="custom-amount-input"
-              />
-              <span className="custom-amount-currency">NOK</span>
-            </div>
-          </div>
-
-          {finalAmount && (
-            <div className="donation-summary">
-              <div className="summary-content">
-                <Heart size={24} className="summary-heart" fill="currentColor" />
-                <div>
-                  <div className="summary-text">Your generous donation of</div>
-                  <div className="summary-amount">{finalAmount} NOK</div>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
         {/* Why Your Donation Matters */}
         <section className="why-donate-section">
           <div className="why-donate-card">

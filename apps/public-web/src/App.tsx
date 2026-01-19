@@ -28,6 +28,8 @@ export default function App() {
         <Route path="/adverts" element={<Adverts />} />
         <Route path="/albums" element={<Albums />} />
         <Route path="/post" element={<Postbox />} />
+        <Route path="/postbox" element={<Postbox />} />
+        <Route path="/contact" element={<Postbox />} />
         <Route path="/about" element={<AboutUs/>} />
         <Route path="/about/whatsapp-guidelines" element={<WhatsAppGuidelines />} />
         <Route path="/about/constitution" element={<Constitution />} />

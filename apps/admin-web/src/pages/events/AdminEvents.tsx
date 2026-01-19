@@ -14,37 +14,46 @@ import {
 import { stripStoredFileToString, toPublicUrl } from "../../lib/media";
 import { Calendar, MapPin, Eye, EyeOff, Pencil, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
-/* ---------- helpers for dd/mm/yyyy + HH:mm:ss ---------- */
-function isoFromLocalParts(dateDDMMYYYY: string, timeHHmmss: string): string | null {
+/* ---------- helpers for dd/mm/yyyy + HH:mm (24h format) ---------- */
+function isoFromLocalParts(dateDDMMYYYY: string, timeHHmm: string): string | null {
   if (!dateDDMMYYYY) return null;
   const [dd, mm, yyyy] = dateDDMMYYYY.split("/").map((x) => Number(x));
   if (!dd || !mm || !yyyy) return null;
 
-  const [hhRaw, miRaw, ssRaw] = (timeHHmmss || "00:00:00").split(":");
+  const [hhRaw, miRaw, ssRaw] = (timeHHmm || "00:00:00").split(":");
   const hh = Number(hhRaw ?? 0);
   const mi = Number(miRaw ?? 0);
   const ss = Number(ssRaw ?? 0);
 
-  const dt = new Date(Date.UTC(yyyy, mm - 1, dd, hh || 0, mi || 0, ss || 0));
+  // Opprett dato i lokal tidssone (ikke UTC)
+  const dt = new Date(yyyy, mm - 1, dd, hh, mi, ss);
 
+  // Formater som ISO 8601 med offset (uten millisekunder) for Java OffsetDateTime
   const pad = (n: number) => String(n).padStart(2, "0");
-  const y = dt.getUTCFullYear();
-  const m = pad(dt.getUTCMonth() + 1);
-  const d = pad(dt.getUTCDate());
-  const h = pad(dt.getUTCHours());
-  const i = pad(dt.getUTCMinutes());
-  const s = pad(dt.getUTCSeconds());
+  const y = dt.getFullYear();
+  const m = pad(dt.getMonth() + 1);
+  const d = pad(dt.getDate());
+  const h = pad(dt.getHours());
+  const i = pad(dt.getMinutes());
+  const s = pad(dt.getSeconds());
+  
+  // Hent tidssone-offset i formatet +HH:MM eller -HH:MM
+  const tzOffset = -dt.getTimezoneOffset();
+  const tzSign = tzOffset >= 0 ? "+" : "-";
+  const tzHours = pad(Math.floor(Math.abs(tzOffset) / 60));
+  const tzMinutes = pad(Math.abs(tzOffset) % 60);
 
-  return `${y}-${m}-${d}T${h}:${i}:${s}Z`;
+  return `${y}-${m}-${d}T${h}:${i}:${s}${tzSign}${tzHours}:${tzMinutes}`;
 }
 
 function partsFromIso(iso?: string | null): { date: string; time: string } {
   if (!iso) return { date: "", time: "" };
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
+  // Bruk lokal tid for visning (ikke UTC)
   return {
-    date: `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`,
-    time: `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`,
+    date: `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
   };
 }
 

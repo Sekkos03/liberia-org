@@ -30,11 +30,11 @@ export default function EventDetail() {
       <main className="flex-1">
         <article className="max-w-5xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-16 sm:pb-24">
           {e.coverImageUrl ? (
-            <div className="rounded-xl overflow-hidden shadow mb-4 sm:mb-6">
+            <div className="rounded-xl overflow-hidden shadow mb-4 sm:mb-6 bg-gray-100">
               <img 
                 src={toPublicUrl(e.coverImageUrl)} 
                 alt={e.title} 
-                className="w-full h-48 sm:h-80 object-cover" 
+                className="w-full max-h-[500px] object-contain mx-auto" 
               />
             </div>
           ) : (

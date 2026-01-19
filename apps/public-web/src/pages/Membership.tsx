@@ -281,6 +281,7 @@ export default function Membership() {
                         value={form.vippsReference}
                         onChange={update("vippsReference")}
                         error={errors.vippsReference}
+                        helpText="You can find the transaction reference in the Vipps app under payment history. This helps admin verify your payment so your membership can be approved."
                       />
                     </div>
 
@@ -371,6 +372,7 @@ function Input({
   onChange,
   required,
   error,
+  helpText,
 }: {
   label: string;
   type?: string;
@@ -378,11 +380,61 @@ function Input({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
   error?: string;
+  helpText?: string;
 }) {
+  const [showHelp, setShowHelp] = useState(false);
+  
   return (
     <label className="block">
-      <div className="mb-1 text-[13px] text-gray-700">
+      <div className="mb-1 text-[13px] text-gray-700 flex items-center gap-1.5">
         {label} {required && <span className="text-red-600">*</span>}
+        {helpText && (
+          <div className="relative inline-block">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowHelp(!showHelp);
+              }}
+              className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#122346] text-white text-[10px] font-bold hover:bg-[#1a3461] transition-colors cursor-help"
+              aria-label="Show help"
+            >
+              ?
+            </button>
+            {showHelp && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowHelp(false)}
+                />
+                <div className="absolute right-0 top-6 z-50 w-72 bg-[#122346] text-white text-xs rounded-lg shadow-lg">
+                  <div className="absolute -top-1.5 right-2 w-3 h-3 bg-[#122346] rotate-45" />
+                  <div className="relative p-3 pt-4">
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowHelp(false);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setShowHelp(false);
+                        }
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/10 text-white text-sm font-bold hover:bg-white/30 transition-colors cursor-pointer select-none"
+                      aria-label="Close"
+                    >
+                      ×
+                    </span>
+                    <p className="leading-relaxed pr-4">{helpText}</p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
       <input
         className={`w-full rounded-lg border px-3 py-2.5 outline-none transition
