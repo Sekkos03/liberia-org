@@ -15,14 +15,15 @@ type Executive = {
   name: string;
   title?: string;
   photoUrl?: string;
+  photoPosition?: string; // Custom object-position for each photo
 };
 
 const executives: Executive[] = [
-  { id: 1, name: "Irvin Wallace Kofa Sr", title: "President" },
-  { id: 2, name: "Joyce Breeze Kamara", title: "Vice President", photoUrl: joycePhoto },
+  { id: 1, name: "Irvin Wallace Kofa Sr.", title: "President" },
+  { id: 2, name: "Joyce Breeze Kamara", title: "Vice President", photoUrl: joycePhoto, photoPosition: "center center" },
   { id: 3, name: "Kula Emmanuella Koroma Forsther", title: "Secretary General" },
-  { id: 4, name: "Nelson S Forsther", title: "National Treasurer", photoUrl: nelsonPhoto },
-  { id: 5, name: "Jay Justin Kwitee Jr", title: "Financial Secretary", photoUrl: jayPhoto },
+  { id: 4, name: "Nelson S. Forsther", title: "National Treasurer", photoUrl: nelsonPhoto, photoPosition: "center 60%" },
+  { id: 5, name: "Jay Justin Kwitee Jr.", title: "Financial Secretary", photoUrl: jayPhoto, photoPosition: "center top" },
 ];
 
 export default function AboutUs() {
@@ -93,6 +94,7 @@ export default function AboutUs() {
                     className="execs__avatar"
                     alt={x.name}
                     loading="lazy"
+                    style={x.photoPosition ? { objectPosition: x.photoPosition } : undefined}
                   />
                 </div>
                 {x.title && <div className="execs__role">{x.title}</div>}
@@ -390,7 +392,7 @@ const css = `
 @media (min-width: 960px) {
   .execs{
     padding:24px 20px;
-    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-columns:repeat(5,minmax(0,1fr));
     gap:28px 24px;
   }
 }
@@ -423,21 +425,21 @@ const css = `
 }
 
 .execs__avatar{
-  width:90px;
-  height:90px;
+  width:95px;
+  height:95px;
   border-radius:50%;
-  object-fit:cover;
-  object-position:center 30%;
+  object-fit:contain;
+  object-position:center center;
   border:3px solid rgba(255,255,255,0.2);
   box-shadow:0 8px 20px rgba(0,0,0,0.3);
   transition:all 0.3s ease;
-  background:#1e2f53;
+  background:#e8e8e8;
 }
 
 @media (min-width: 640px) {
   .execs__avatar{
-    width:110px;
-    height:110px;
+    width:120px;
+    height:120px;
   }
 }
 

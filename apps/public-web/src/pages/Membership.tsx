@@ -55,17 +55,18 @@ export default function Membership() {
         ? countFilledStep1(form)
         : countFilledStep1(form) + countFilledStep2(form);
 
-    const total = step === 1 ? 9 : 12;
+    // 8 required fields in step 1 (personalNr is now optional) + 3 in step 2 = 11 total
+    const total = step === 1 ? 8 : 11;
     return Math.round((filled / total) * 100);
   }, [form, step]);
 
   function validateStep1(): boolean {
     const e: Record<string, string> = {};
+    // personalNr is now optional - removed from required fields
     const req: (keyof MembershipForm)[] = [
       "firstName",
       "lastName",
       "dateOfBirth",
-      "personalNr",
       "address",
       "postCode",
       "city",
@@ -104,7 +105,7 @@ export default function Membership() {
     try {
       const exists = await checkAlreadyMember({
         email: form.email.trim(),
-        personalNr: form.personalNr.trim(),
+        personalNr: form.personalNr.trim() || "", // Allow empty personalNr
       });
       if (exists) {
         setErr("You are already a member.");
@@ -224,7 +225,12 @@ export default function Membership() {
                   </div>
 
                   <Input label="Date of birth" type="date" required value={form.dateOfBirth} onChange={update("dateOfBirth")} error={errors.dateOfBirth} />
-                  <Input label="Personal number" required value={form.personalNr} onChange={update("personalNr")} error={errors.personalNr} />
+                  <Input 
+                    label="Personal number (last 5 digits) — optional" 
+                    value={form.personalNr} 
+                    onChange={update("personalNr")} 
+                    error={errors.personalNr}
+                  />
                   <Input label="Address" required value={form.address} onChange={update("address")} error={errors.address} />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -350,9 +356,10 @@ export default function Membership() {
   );
 }
 
+// Count filled required fields only (personalNr is optional now)
 function countFilledStep1(form: MembershipForm) {
   const keys: (keyof MembershipForm)[] = [
-    "firstName","lastName","dateOfBirth","personalNr","address","postCode","city","phone","email"
+    "firstName","lastName","dateOfBirth","address","postCode","city","phone","email"
   ];
   return keys.filter(k => (form[k] ?? "").toString().trim().length > 0).length;
 }

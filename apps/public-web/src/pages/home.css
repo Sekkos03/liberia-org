@@ -547,7 +547,7 @@ section {
 .nav-card--events { --card-accent: #3b82f6; }
 .nav-card--adverts { --card-accent: #f59e0b; }
 .nav-card--albums { --card-accent: #10b981; }
-.nav-card--postbox { --card-accent: #ec4899; }
+.nav-card--contact { --card-accent: #14b8a6; }
 .nav-card--about { --card-accent: #6366f1; }
 
 .nav-card__icon {
@@ -846,6 +846,7 @@ section {
   max-width: 280px;
   width: 100%;
   height: auto;
+  border-radius: 50%;
   filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.3));
   transition: transform 0.4s ease;
 }

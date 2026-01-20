@@ -6,7 +6,7 @@ import Footer from "../components/Footer";
 import "./home.css";
 import DonationPopup from "../components/Donationpopup";
 import { getEvents, type EventDto } from "../lib/events";
-import UlanLogo from "../assets/Ulan_logo-removebg-preview.png";
+import UlanLogo from "../assets/Ulan_logo-removebg-preview.jpeg";
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -123,7 +123,7 @@ export default function Home() {
           <p className="section-subtitle">Discover everything our community has to offer</p>
           
           <div className="nav-cards-grid">
-            {/* Forms - FIXED: Changed from /forms to /membership */}
+            {/* Forms */}
             <Link to="/membership" className="nav-card nav-card--forms">
               <div className="nav-card__icon">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -191,18 +191,17 @@ export default function Home() {
               </span>
             </Link>
 
-            {/* Post Box */}
-            <Link to="/postbox" className="nav-card nav-card--postbox">
+            {/* Contact - Previously Post Box */}
+            <Link to="/contact" className="nav-card nav-card--contact">
               <div className="nav-card__icon">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
+                  <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4 2.1h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8.1 9.6a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.7a2 2 0 0 1 1.7 2z"/>
                 </svg>
               </div>
-              <h3 className="nav-card__title">Post Box</h3>
-              <p className="nav-card__desc">Send messages, share ideas, and communicate with the community.</p>
+              <h3 className="nav-card__title">Contact</h3>
+              <p className="nav-card__desc">Get in touch with us, find contact info, or send us a message directly.</p>
               <span className="nav-card__link">
-                Open inbox <span className="nav-card__arrow">→</span>
+                Reach out <span className="nav-card__arrow">→</span>
               </span>
             </Link>
 
@@ -456,12 +455,11 @@ export default function Home() {
             <div className="cta-card cta-card--contact">
               <div className="cta-card__icon">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
+                  <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4 2.1h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8.1 9.6a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.7a2 2 0 0 1 1.7 2z"/>
                 </svg>
               </div>
               <h3 className="cta-card__title">Get in Touch</h3>
-              <p className="cta-card__text">Have questions? Want to get involved? We'd love to hear from you.</p>
+              <p className="cta-card__text">Have questions? Want to get involved? Find our contact info or send us a message.</p>
               <Link to="/contact" className="btn btn--ghost btn--light">
                 Contact Us
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
