@@ -44,16 +44,24 @@ section {
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-color: #0f2847;
+  
 }
 
 .home-hero::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(10, 20, 40, 0.35);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15, 40, 71, 0.35) 0%,
+      rgba(15, 40, 71, 0.55) 100%
+    );
+  backdrop-filter: brightness(1.15) contrast(1.1);
   pointer-events: none;
   z-index: 1;
 }
+
 
 /* === Particles === */
 .particles {
@@ -171,11 +179,13 @@ section {
   transition: opacity 1s ease, transform 1s ease;
   
   /* Solid dark background for readability */
-  background: rgba(10, 20, 40, 0.92);
+  background: rgba(10, 20, 40, 0.85);
   backdrop-filter: blur(20px);
   border-radius: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .hero-inner--loaded {
@@ -1084,4 +1094,11 @@ section {
 
 footer, .site-footer { 
   position: static; 
+}
+
+
+@supports not (backdrop-filter: blur(20px)) {
+  .hero-inner {
+    background: rgba(10, 20, 40, 0.95);
+  }
 }
