@@ -7,6 +7,7 @@ import jayPhoto from "../assets/jay.png";
 import nelsonPhoto from "../assets/nelson.png";
 import joycePhoto from "../assets/joyce.png";
 import kulaPhoto from "../assets/kula.png";
+import irvinPhoto from "../assets/irvin.png";
 
 const ANON_AVATAR =
   "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20128%20128%27%3E%0A%3Cdefs%3E%0A%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%0A%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231e3a8a%27/%3E%0A%3Cstop%20offset%3D%271%27%20stop-color%3D%27%230b1e35%27/%3E%0A%3C/linearGradient%3E%0A%3C/defs%3E%0A%3Crect%20width%3D%27128%27%20height%3D%27128%27%20rx%3D%2764%27%20fill%3D%27url(%23g)%27/%3E%0A%3Ccircle%20cx%3D%2764%27%20cy%3D%2752%27%20r%3D%2722%27%20fill%3D%27rgba(255%2C255%2C255%2C0.88)%27/%3E%0A%3Cpath%20d%3D%27M24%20116c8-22%2024-32%2040-32s32%2010%2040%2032%27%20fill%3D%27rgba(255%2C255%2C255%2C0.88)%27/%3E%0A%3C/svg%3E";
@@ -20,7 +21,7 @@ type Executive = {
 };
 
 const executives: Executive[] = [
-  { id: 1, name: "Irvin Wallace Kofa Sr.", title: "President" },
+  { id: 1, name: "Irvin Wallace Kofa Sr.", title: "President", photoUrl: irvinPhoto, photoPosition: "center 60%" },
   { id: 2, name: "Joyce Breeze Kamara", title: "Vice President", photoUrl: joycePhoto, photoPosition: "center center" },
   { id: 3, name: "Kula Emmanuella Koroma Forsther", title: "Secretary General", photoUrl: kulaPhoto, photoPosition: "center center" },
   { id: 4, name: "Nelson S. Forsther", title: "National Treasurer", photoUrl: nelsonPhoto, photoPosition: "center 60%" },
