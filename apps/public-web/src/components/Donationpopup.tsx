@@ -9,7 +9,7 @@ export default function DonationPopup() {
     // Show popup after 5 seconds on every page load
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 5000);
+    }, 30000);
 
     return () => clearTimeout(timer);
   }, []);

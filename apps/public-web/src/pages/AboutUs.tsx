@@ -21,7 +21,7 @@ type Executive = {
 };
 
 const executives: Executive[] = [
-  { id: 1, name: "Irvin Wallace Kofa Sr.", title: "President", photoUrl: irvinPhoto, photoPosition: "center 60%" },
+  { id: 1, name: "Irvin Wallace Kofa Sr.", title: "President", photoUrl: irvinPhoto, photoPosition: "center center" },
   { id: 2, name: "Joyce Breeze Kamara", title: "Vice President", photoUrl: joycePhoto, photoPosition: "center center" },
   { id: 3, name: "Kula Emmanuella Koroma Forsther", title: "Secretary General", photoUrl: kulaPhoto, photoPosition: "center center" },
   { id: 4, name: "Nelson S. Forsther", title: "National Treasurer", photoUrl: nelsonPhoto, photoPosition: "center 60%" },
@@ -66,14 +66,52 @@ export default function AboutUs() {
           <div className="aboutBox__content">
             <h2 className="aboutBox__title">Who We Are</h2>
             <p className="aboutBox__text">
-              ULAN is a non governmental organization based in Norway that carries out charitable socioeconomic
-              developments in Liberia through five thematic areas: Health, Education, Agriculture, Microfinance,
-              and Emergency Relief in Liberia (commonly known as the <strong>HEAMER PROJECTS</strong>).
+              We are the Union of Liberian Associations in Norway (ULAN) — a non-governmental organization 
+              dedicated to carrying out charitable socioeconomic developments in Liberia through five thematic 
+              areas: Health, Education, Agriculture, Microfinance, and Emergency Relief in Liberia 
+              (commonly known as the <strong>HEAMER PROJECTS</strong>).
             </p>
             <p className="aboutBox__text">
-              The nonprofit charitable organization, which is run by Liberians residing in the Kingdom of Norway
-              and Liberia respectively, was established in 2005 in the Norwegian city of Kongsberg.
+              Founded in 2005 in the Norwegian city of Kongsberg, we are proudly run by Liberians residing 
+              in Norway and Liberia. Our mission is to preserve our rich cultural heritage while helping 
+              our community thrive in their new home.
             </p>
+          </div>
+        </section>
+
+        {/* Our Mission */}
+        <section className="aboutBox aboutBox--alt">
+          <div className="aboutBox__icon">🎯</div>
+          <div className="aboutBox__content">
+            <h2 className="aboutBox__title">Our Mission</h2>
+            <p className="aboutBox__text">
+              We strive to unite Liberians in Norway, support integration while preserving our cultural identity, 
+              and contribute to the development of Liberia through charitable projects and community initiatives.
+            </p>
+          </div>
+        </section>
+
+        {/* Connect With Us */}
+        <section className="aboutBox aboutBox--social">
+          <div className="aboutBox__icon">🌐</div>
+          <div className="aboutBox__content">
+            <h2 className="aboutBox__title">Connect With Us</h2>
+            <p className="aboutBox__text">
+              Stay updated with our latest news, events, and community activities by following us on social media.
+            </p>
+            <div className="aboutSocial">
+              <a 
+                href="https://www.facebook.com/groups/380409495381436" 
+                target="_blank" 
+                rel="noreferrer"
+                className="aboutSocial__link"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="aboutSocial__icon">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                <span>Follow us on Facebook</span>
+              </a>
+            </div>
           </div>
         </section>
 
@@ -331,6 +369,50 @@ const css = `
 .aboutBox__text strong{
   color:#6ee7b7;
   font-weight:700;
+}
+
+.aboutBox--alt{
+  margin-top:20px;
+  animation-delay:0.3s;
+}
+
+.aboutBox--social{
+  margin-top:20px;
+  animation-delay:0.4s;
+}
+
+.aboutSocial{
+  margin-top:16px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+}
+
+.aboutSocial__link{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 20px;
+  background:rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:10px;
+  color:#fff;
+  text-decoration:none;
+  font-weight:600;
+  font-size:14px;
+  transition:all 0.3s ease;
+}
+
+.aboutSocial__link:hover{
+  background:#1877f2;
+  border-color:#1877f2;
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(24,119,242,0.3);
+}
+
+.aboutSocial__icon{
+  width:20px;
+  height:20px;
 }
 
 .execsSection{

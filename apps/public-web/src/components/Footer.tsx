@@ -8,7 +8,7 @@ export default function Footer() {
     <footer className="site-footer" role="contentinfo" aria-label="Site footer">
       <div className="site-footer__inner">
         <p className="site-footer__text">
-          Copyright © {year} Liberia Associtations Norway · Webdesign by{" "}
+          Copyright © {year} Union of Liberian Associations In Norway · Webdesign by{" "}
           <a
             className="site-footer__link"
             href="https://www.linkedin.com/in/sekou-kosiah-93b96325a/"
