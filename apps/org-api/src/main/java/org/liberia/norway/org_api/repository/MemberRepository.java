@@ -13,9 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
   boolean existsByEmailIgnoreCase(String email);
-  boolean existsByPersonalNr(String personalNr);
   boolean existsByEmailIgnoreCaseAndStatus(String email, Status status);
-  boolean existsByPersonalNrAndStatus(String personalNr, Status status);
 
   Page<Member> findAllByOrderByCreatedAtDesc(Pageable pageable);
   Page<Member> findAllByStatusOrderByCreatedAtDesc(Status status, Pageable pageable);
@@ -23,7 +21,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   long deleteByStatusAndDeleteAtBefore(Status status, Instant now);
 
  boolean existsByEmailIgnoreCaseAndStatusAndIdNot(String email, Member.Status status, Long id);
- boolean existsByPersonalNrAndStatusAndIdNot(String personalNr, Member.Status status, Long id);
 
   @Query("""
     select m

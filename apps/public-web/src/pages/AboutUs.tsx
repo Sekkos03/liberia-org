@@ -64,17 +64,18 @@ export default function AboutUs() {
         <section className="aboutBox">
           <div className="aboutBox__icon">ℹ️</div>
           <div className="aboutBox__content">
-            <h2 className="aboutBox__title">Who We Are</h2>
+            <h2 className="aboutBox__title">About ULAN</h2>
             <p className="aboutBox__text">
-              We are the Union of Liberian Associations in Norway (ULAN) — a non-governmental organization 
-              dedicated to carrying out charitable socioeconomic developments in Liberia through five thematic 
-              areas: Health, Education, Agriculture, Microfinance, and Emergency Relief in Liberia 
-              (commonly known as the <strong>HEAMER PROJECTS</strong>).
+              The Union of Liberian Associations in Norway brings Liberians across the country together under one umbrella. Founded in 2005 in the city of Kongsberg, ULAN is proudly run by Liberians living in Norway.
             </p>
             <p className="aboutBox__text">
-              Founded in 2005 in the Norwegian city of Kongsberg, we are proudly run by Liberians residing 
-              in Norway and Liberia. Our mission is to preserve our rich cultural heritage while helping 
-              our community thrive in their new home.
+              We were created to strengthen our community, preserve our culture, and support each other as we build meaningful lives here in Norway. ULAN serves as a home for Liberians in different cities including young people, elders, families, students, and professionals. Through cultural events, community programs, advocacy, and collaboration, we work to keep our identity strong while helping our members feel included and empowered in Norwegian society.
+            </p>
+            <p className="aboutBox__text">
+              Beyond our work in Norway, ULAN is committed to charitable social and economic development in Liberia through five key areas: Health, Education, Agriculture, Microfinance, and Emergency Relief. These areas are known together as the HEAMER Projects.
+            </p>
+            <p className="aboutBox__text">
+              We believe that when the diaspora is connected, informed, and united, we can contribute positively to both Norway and Liberia. Our strength comes from our people, our culture, and our shared commitment to lifting each other up.
             </p>
           </div>
         </section>
@@ -85,8 +86,18 @@ export default function AboutUs() {
           <div className="aboutBox__content">
             <h2 className="aboutBox__title">Our Mission</h2>
             <p className="aboutBox__text">
-              We strive to unite Liberians in Norway, support integration while preserving our cultural identity, 
-              and contribute to the development of Liberia through charitable projects and community initiatives.
+              To bring Liberians in Norway together through inclusive programs, cultural celebration, advocacy, and empowerment. We aim to build a community grounded in identity, respect, and purpose. We also work to support integration while preserving our cultural heritage and to contribute to the development of Liberia through charitable projects and community initiatives.
+            </p>
+          </div>
+        </section>
+
+        {/* Our Vision */}
+        <section className="aboutBox aboutBox--vision">
+          <div className="aboutBox__icon">⭐</div>
+          <div className="aboutBox__content">
+            <h2 className="aboutBox__title">Our Vision</h2>
+            <p className="aboutBox__text">
+              A strong, organized, and thriving Liberian community in Norway that contributes socially, economically, and culturally to both the host country and Liberia.
             </p>
           </div>
         </section>
@@ -378,7 +389,12 @@ const css = `
 
 .aboutBox--social{
   margin-top:20px;
-  animation-delay:0.4s;
+  animation-delay:0.5s;
+}
+
+.aboutBox--vision{
+  margin-top:20px;
+  animation-delay:0.35s;
 }
 
 .aboutSocial{

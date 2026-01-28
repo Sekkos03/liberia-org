@@ -430,7 +430,6 @@ function ViewMemberModal({
           <ViewField label="First name" value={member.firstName} />
           <ViewField label="Last name" value={member.lastName} />
           <ViewField label="Date of birth" value={member.dateOfBirth} />
-          <ViewField label="Personal number" value={member.personalNr} />
           <ViewField label="Address" value={member.address} />
           <ViewField label="Post code" value={member.postCode} />
           <ViewField label="City" value={member.city} />
@@ -550,7 +549,6 @@ function EditMemberModal({
     firstName: "",
     lastName: "",
     dateOfBirth: "",
-    personalNr: "",
     address: "",
     postCode: "",
     city: "",
@@ -592,7 +590,6 @@ function EditMemberModal({
           <Field label="First name *" value={m.firstName ?? ""} onChange={set("firstName")} />
           <Field label="Last name *" value={m.lastName ?? ""} onChange={set("lastName")} />
           <Field label="Date of birth" type="date" value={m.dateOfBirth ?? ""} onChange={set("dateOfBirth")} />
-          <Field label="Personal number" value={m.personalNr ?? ""} onChange={set("personalNr")} />
           <Field label="Address" value={m.address ?? ""} onChange={set("address")} />
           <Field label="Post code" value={m.postCode ?? ""} onChange={set("postCode")} />
           <Field label="City" value={m.city ?? ""} onChange={set("city")} />

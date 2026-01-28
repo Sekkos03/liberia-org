@@ -23,7 +23,6 @@ export default function Membership() {
     firstName: "",
     lastName: "",
     dateOfBirth: "",
-    personalNr: "",
     address: "",
     postCode: "",
     city: "",
@@ -105,7 +104,6 @@ export default function Membership() {
     try {
       const exists = await checkAlreadyMember({
         email: form.email.trim(),
-        personalNr: form.personalNr.trim() || "", // Allow empty personalNr
       });
       if (exists) {
         setErr("You are already a member.");
@@ -144,7 +142,6 @@ export default function Membership() {
       firstName: "",
       lastName: "",
       dateOfBirth: "",
-      personalNr: "",
       address: "",
       postCode: "",
       city: "",
@@ -225,12 +222,6 @@ export default function Membership() {
                   </div>
 
                   <Input label="Date of birth" type="date" required value={form.dateOfBirth} onChange={update("dateOfBirth")} error={errors.dateOfBirth} />
-                  <Input 
-                    label="Personal number (last 5 digits) — optional" 
-                    value={form.personalNr} 
-                    onChange={update("personalNr")} 
-                    error={errors.personalNr}
-                  />
                   <Input label="Address" required value={form.address} onChange={update("address")} error={errors.address} />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -356,7 +347,7 @@ export default function Membership() {
   );
 }
 
-// Count filled required fields only (personalNr is optional now)
+// Count filled required fields only
 function countFilledStep1(form: MembershipForm) {
   const keys: (keyof MembershipForm)[] = [
     "firstName","lastName","dateOfBirth","address","postCode","city","phone","email"

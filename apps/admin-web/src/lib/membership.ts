@@ -6,7 +6,6 @@ export type MemberDTO = {
   firstName?: string;
   lastName?: string;
   dateOfBirth?: string;
-  personalNr?: string;
   address?: string;
   postCode?: string;
   city?: string;
@@ -49,7 +48,6 @@ export type MembershipApplicationDTO = {
   firstName?: string | null;
   lastName?: string | null;
   dateOfBirth?: string | null;
-  personalNr?: string | null;
   address?: string | null;
   postCode?: string | null;
   city?: string | null;

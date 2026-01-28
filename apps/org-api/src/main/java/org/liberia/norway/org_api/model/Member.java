@@ -23,7 +23,6 @@ public class Member {
   @Column(length = 120) private String firstName;
   @Column(length = 120) private String lastName;
   private LocalDate dateOfBirth;
-  @Column(length = 64)  private String personalNr;
   @Column(length = 256) private String address;
   @Column(length = 32)  private String postCode;
   @Column(length = 120) private String city;
@@ -81,8 +80,6 @@ public void setStatus(Status status) {
   public void setLastName(String lastName) { this.lastName = lastName; }
   public LocalDate getDateOfBirth() { return dateOfBirth; }
   public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
-  public String getPersonalNr() { return personalNr; }
-  public void setPersonalNr(String personalNr) { this.personalNr = personalNr; }
   public String getAddress() { return address; }
   public void setAddress(String address) { this.address = address; }
   public String getPostCode() { return postCode; }

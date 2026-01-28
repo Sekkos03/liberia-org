@@ -8,7 +8,6 @@ export type MembershipForm = {
   firstName: string;
   lastName: string;
   dateOfBirth: string; // yyyy-mm-dd
-  personalNr: string;
   address: string;
   postCode: string;
   city: string;
@@ -16,20 +15,15 @@ export type MembershipForm = {
   email: string;
 
   // Vipps
-  vippsAmountNok: string;      // "300"
+  vippsAmountNok: string;      // "245"
   vippsReference: string;      // kvittering / melding
   vippsConfirmed: boolean;     // må være true
 };
 
 export async function checkAlreadyMember(args: {
   email: string;
-  personalNr: string;
 }): Promise<boolean> {
-  // ✅ Backend bør lage denne: GET /api/membership/exists?email=...&personalNr=...
-  // Returner { exists: true/false }
-  const url =
-    `${API_BASE}/api/membership/exists?email=${encodeURIComponent(args.email)}` +
-    `&personalNr=${encodeURIComponent(args.personalNr)}`;
+  const url = `${API_BASE}/api/membership/exists?email=${encodeURIComponent(args.email)}`;
 
   const res = await fetch(url, { headers: { Accept: "application/json" } });
 

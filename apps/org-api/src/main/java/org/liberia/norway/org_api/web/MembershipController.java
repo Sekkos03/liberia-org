@@ -51,12 +51,11 @@ public boolean exists(@RequestParam String email) {
   public ResponseEntity<?> apply(@RequestBody MemberApplyRequest req) {
     try {
       // Basic validation
-      if (isBlank(req.firstName) || isBlank(req.lastName) || isBlank(req.email) || isBlank(req.personalNr)) {
+      if (isBlank(req.firstName) || isBlank(req.lastName) || isBlank(req.email)) {
         return ResponseEntity.badRequest().body("Please fill in all required fields.");
       }
 
       String email = req.email.trim();
-      String pn = req.personalNr.trim();
 
       if (memrepo.existsByEmailIgnoreCaseAndStatus(req.email, Status.ACCEPTED)) {
   throw new ResponseStatusException(HttpStatus.CONFLICT, "You are already a member.");
@@ -68,10 +67,6 @@ if (memrepo.existsByEmailIgnoreCaseAndStatus(req.email, Status.PENDING)) {
 
 if (memrepo.existsByEmailIgnoreCaseAndStatus(req.email, Status.REJECTED)) {
   throw new ResponseStatusException(HttpStatus.CONFLICT, "Your application was rejected. Contact admin.");
-}
-
-if (req.personalNr != null && memrepo.existsByPersonalNrAndStatus(req.personalNr, Status.ACCEPTED)) {
-  throw new ResponseStatusException(HttpStatus.CONFLICT, "Personal number already exists as a member.");
 }
 
 
@@ -102,7 +97,6 @@ if (req.personalNr != null && memrepo.existsByPersonalNrAndStatus(req.personalNr
       a.setFirstName(req.firstName.trim());
       a.setLastName(req.lastName.trim());
       a.setDateOfBirth(parseDate(req.dateOfBirth));
-      a.setPersonalNr(pn);
       a.setAddress(n(req.address));
       a.setPostCode(n(req.postCode));
       a.setCity(n(req.city));
@@ -145,7 +139,7 @@ if (req.personalNr != null && memrepo.existsByPersonalNrAndStatus(req.personalNr
   }
 
   public static final class MemberApplyRequest {
-    public String firstName, lastName, dateOfBirth, personalNr, address,
+    public String firstName, lastName, dateOfBirth, address,
         postCode, city, phone, email, occupation;
 
     public String vippsAmountNok;
@@ -186,5 +180,3 @@ if (req.personalNr != null && memrepo.existsByPersonalNrAndStatus(req.personalNr
 }
 
 }
-
- 

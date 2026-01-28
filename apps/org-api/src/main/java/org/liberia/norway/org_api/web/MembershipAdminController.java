@@ -63,9 +63,6 @@ public class MembershipAdminController {
     if (in.email != null && memrepo.existsByEmailIgnoreCaseAndStatus(in.email, Status.ACCEPTED)) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "This email already exists as a member.");
     }
-    if (in.personalNr != null && memrepo.existsByPersonalNrAndStatus(in.personalNr, Status.ACCEPTED)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "This personal number already exists as a member.");
-    }
 
     Member m = new Member();
     apply(m, in);
@@ -89,13 +86,6 @@ public class MembershipAdminController {
       }
     }
     
-    // Check for duplicate personalNr (excluding current member)
-    if (in.personalNr != null && !in.personalNr.equals(m.getPersonalNr())) {
-      if (memrepo.existsByPersonalNrAndStatusAndIdNot(in.personalNr, Status.ACCEPTED, id)) {
-        throw new ResponseStatusException(HttpStatus.CONFLICT, "This personal number already exists as a member.");
-      }
-    }
-    
     apply(m, in);
     return MemberDTO.from(memrepo.save(m));
   }
@@ -111,7 +101,6 @@ public class MembershipAdminController {
       String firstName,
       String lastName,
       String dateOfBirth,
-      String personalNr,
       String address,
       String postCode,
       String city,
@@ -128,7 +117,6 @@ public class MembershipAdminController {
           m.getFirstName(),
           m.getLastName(),
           m.getDateOfBirth() != null ? m.getDateOfBirth().toString() : null,
-          m.getPersonalNr(),
           m.getAddress(),
           m.getPostCode(),
           m.getCity(),
@@ -146,7 +134,6 @@ public class MembershipAdminController {
     m.setFirstName(in.firstName);
     m.setLastName(in.lastName);
     m.setDateOfBirth(parseDate(in.dateOfBirth));
-    m.setPersonalNr(n(in.personalNr));
     m.setAddress(n(in.address));
     m.setPostCode(n(in.postCode));
     m.setCity(n(in.city));
@@ -174,7 +161,6 @@ public class MembershipAdminController {
       String firstName,
       String lastName,
       String dateOfBirth,
-      String personalNr,
       String address,
       String postCode,
       String city,
@@ -194,7 +180,6 @@ public class MembershipAdminController {
           a.getFirstName(),
           a.getLastName(),
           a.getDateOfBirth() != null ? a.getDateOfBirth().toString() : null,
-          a.getPersonalNr(),
           a.getAddress(),
           a.getPostCode(),
           a.getCity(),
