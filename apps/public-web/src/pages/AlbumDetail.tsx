@@ -24,7 +24,7 @@ export default function AlbumDetail() {
   );
 
   const title = q.data?.album?.eventTitle || q.data?.album?.title || "Album";
-  const [lightbox, setLightbox] = useState<{ url: string; title?: string | null } | null>(null);
+  const [lightbox, setLightbox] = useState<{ url: string; kind: "IMAGE" | "VIDEO" } | null>(null);
 
   // Lock scroll when lightbox is open
   useEffect(() => {
@@ -104,7 +104,7 @@ export default function AlbumDetail() {
                     <li
                       key={(it.id ?? idx) + "-img"}
                       className="card"
-                      onClick={() => setLightbox({ url: it.url, title: it.title })}
+                      onClick={() => setLightbox({ url: it.url, kind: "IMAGE" })}
                       style={{ animationDelay: `${idx * 50}ms` }}
                     >
                       <div className="card__thumb">
@@ -117,7 +117,7 @@ export default function AlbumDetail() {
                           return (
                             <img
                               src={thumb}
-                              alt={it.title ?? "image"}
+                              alt="Bilde"
                               loading="lazy"
                               onError={(e) => {
                                 if (e.currentTarget.src !== full) e.currentTarget.src = full;
@@ -128,10 +128,6 @@ export default function AlbumDetail() {
                         <div className="card__overlay">
                           <span className="view-icon">👁️</span>
                         </div>
-                      </div>
-                      <div className="card__body">
-                        <div className="card__title">{it.title || "Untitled"}</div>
-                        <div className="card__meta">{q.data?.album?.title ?? ""}</div>
                       </div>
                     </li>
                   ))}
@@ -156,18 +152,14 @@ export default function AlbumDetail() {
                     <li
                       key={(it.id ?? idx) + "-vid"}
                       className="card"
-                      onClick={() => setLightbox({ url: it.url, title: it.title })}
+                      onClick={() => setLightbox({ url: it.url, kind: "VIDEO" })}
                       style={{ animationDelay: `${idx * 50}ms` }}
                     >
                       <div className="card__thumb">
                         <video src={toPublicUrl(it.url)} preload="metadata" muted playsInline />
-                        <div className="card__overlay">
+                        <div className="card__overlay card__overlay--video">
                           <span className="play-badge">▶</span>
                         </div>
-                      </div>
-                      <div className="card__body">
-                        <div className="card__title">{it.title || "Untitled"}</div>
-                        <div className="card__meta">{q.data?.album?.title ?? ""}</div>
                       </div>
                     </li>
                   ))}
@@ -190,15 +182,12 @@ export default function AlbumDetail() {
               ✕
             </button>
             <div className="lightbox__media">
-              {/\.(mp4|webm|ogg|mkv|mov)$/i.test(lightbox.url) ? (
+              {lightbox.kind === "VIDEO" || /\.(mp4|webm|ogg|mkv|mov)$/i.test(lightbox.url) ? (
                 <video src={toPublicUrl(lightbox.url)} controls autoPlay playsInline />
               ) : (
-                <img src={toPublicUrl(lightbox.url)} alt={lightbox.title ?? ""} />
+                <img src={toPublicUrl(lightbox.url)} alt="Bilde" />
               )}
             </div>
-            {lightbox.title && (
-              <div className="lightbox__caption">{lightbox.title}</div>
-            )}
           </div>
         </div>
       )}
@@ -336,38 +325,26 @@ const css = `
   gap:4px;
   color:#1e3a5f;
   font-weight:600;
-  text-decoration:none;
   font-size:13px;
-  transition:all 0.2s ease;
+  text-decoration:none;
+  transition:color 0.2s ease;
 }
 
 @media (min-width: 640px) {
-  .backLink{
-    font-size:14px;
-    gap:6px;
-  }
+  .backLink{font-size:14px;}
 }
 
 .backLink:hover{
-  color:#152843;
-  transform:translateX(-4px);
+  color:#10b981;
 }
 
 .lists{
   display:grid;
   grid-template-columns:1fr;
-  gap:16px;
-  margin-top:8px;
+  gap:20px;
 }
 
-@media (min-width: 640px) {
-  .lists{
-    gap:20px;
-    margin-top:10px;
-  }
-}
-
-@media (min-width: 960px) {
+@media (min-width: 900px) {
   .lists{
     grid-template-columns:1fr 1fr;
     gap:28px;
@@ -538,12 +515,17 @@ const css = `
 .card__overlay{
   position:absolute;
   inset:0;
-  background:linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+  background:linear-gradient(to top, rgba(0,0,0,0.5), transparent);
   opacity:0;
   transition:opacity 0.3s ease;
   display:flex;
   align-items:center;
   justify-content:center;
+}
+
+.card__overlay--video{
+  opacity:1;
+  background:linear-gradient(to top, rgba(0,0,0,0.4), transparent 60%);
 }
 
 .card:hover .card__overlay{
@@ -566,41 +548,11 @@ const css = `
   color:#fff;
   font-size:18px;
   box-shadow:0 4px 16px rgba(16,185,129,0.4);
-  animation:pulse 2s ease infinite;
+  transition:transform 0.3s ease;
 }
 
-@keyframes pulse{
-  0%, 100%{transform:scale(1)}
-  50%{transform:scale(1.1)}
-}
-
-.card__body{
-  padding:8px 10px 10px;
-}
-
-@media (min-width: 640px) {
-  .card__body{padding:10px 12px 12px;}
-}
-
-.card__title{
-  font-size:13px;
-  color:#e6eefc;
-  margin:0 0 4px;
-  line-height:1.3;
-  font-weight:600;
-}
-
-@media (min-width: 640px) {
-  .card__title{font-size:15px;}
-}
-
-.card__meta{
-  font-size:11px;
-  color:#9fb2cc;
-}
-
-@media (min-width: 640px) {
-  .card__meta{font-size:12px;}
+.card:hover .play-badge{
+  transform:scale(1.1);
 }
 
 .lightbox{
@@ -659,21 +611,6 @@ const css = `
   max-width:100%;
   max-height:calc(90vh - 80px);
   object-fit:contain;
-}
-
-.lightbox__caption{
-  color:#e6eefc;
-  margin-top:10px;
-  font-weight:600;
-  text-align:center;
-  font-size:13px;
-}
-
-@media (min-width: 640px) {
-  .lightbox__caption{
-    margin-top:12px;
-    font-size:14px;
-  }
 }
 
 .lightbox__close{

@@ -307,24 +307,8 @@ export type UploadProgress = {
 export type UploadProgressCallback = (progress: UploadProgress) => void;
 
 /**
- * Get auth token from localStorage or sessionStorage
- */
-function getAuthToken(): string | null {
-  // Try common token storage locations
-  const token = 
-    localStorage.getItem("token") ||
-    localStorage.getItem("authToken") ||
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("jwt") ||
-    sessionStorage.getItem("token") ||
-    sessionStorage.getItem("authToken");
-  
-  return token;
-}
-
-/**
- * Upload album items with progress tracking using XMLHttpRequest
- * This is more reliable than axios for large file uploads with progress
+ * Upload album items using axios (works for both local and production)
+ * Uses the same http instance that handles auth automatically
  */
 export async function uploadAlbumItemsAdmin(
   albumId: number,
@@ -355,133 +339,85 @@ export async function uploadAlbumItemsAdmin(
 
   const totalSize = files.reduce((sum, f) => sum + f.size, 0);
 
-  // Get base URL from axios instance
-  const baseURL = http.defaults.baseURL || "";
-  
-  // Get auth token
-  const token = getAuthToken();
+  // Set initial progress
+  onProgress?.({
+    loaded: 0,
+    total: totalSize,
+    percentage: 0,
+    status: "uploading",
+    currentFile: files[0]?.name,
+  });
 
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
+  try {
+    const res = await http.post(`/api/admin/albums/${albumId}/items`, fd, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      timeout: UPLOAD_TIMEOUT,
+      onUploadProgress: (progressEvent) => {
+        const loaded = progressEvent.loaded || 0;
+        const total = progressEvent.total || totalSize;
+        const percentage = Math.round((loaded / total) * 100);
 
-    // Track upload progress
-    xhr.upload.addEventListener("progress", (event) => {
-      if (event.lengthComputable) {
-        const percentage = Math.round((event.loaded / event.total) * 100);
         onProgress?.({
-          loaded: event.loaded,
-          total: event.total,
+          loaded,
+          total,
           percentage,
           status: percentage >= 100 ? "processing" : "uploading",
           currentFile: files[0]?.name,
         });
-      }
+      },
     });
 
-    // Handle successful completion
-    xhr.addEventListener("load", () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          onProgress?.({
-            loaded: totalSize,
-            total: totalSize,
-            percentage: 100,
-            status: "complete",
-          });
-          resolve(unwrap(data, "items").map(normalizeAdminItem));
-        } catch (e) {
-          console.error("Failed to parse response:", xhr.responseText);
-          reject(new Error("Failed to parse server response"));
-        }
+    onProgress?.({
+      loaded: totalSize,
+      total: totalSize,
+      percentage: 100,
+      status: "complete",
+    });
+
+    return unwrap(res.data, "items").map(normalizeAdminItem);
+  } catch (error: any) {
+    let errorMessage = "Upload failed";
+
+    // Handle different error types
+    if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
+      errorMessage = "Upload timed out. The file may be too large or the connection is slow.";
+    } else if (error.response) {
+      // Server responded with error
+      const status = error.response.status;
+      const data = error.response.data;
+
+      if (status === 413) {
+        errorMessage = "File too large. Please reduce the file size or upload fewer files at once.";
+      } else if (status === 415) {
+        errorMessage = "Unsupported file format. Please use supported image or video formats.";
+      } else if (status === 401) {
+        errorMessage = "Authentication required. Please log in again.";
+      } else if (status === 403) {
+        errorMessage = "Permission denied. You don't have access to upload files.";
+      } else if (status >= 500) {
+        errorMessage = data?.message || data?.detail || "Server error. Please try again later.";
       } else {
-        let errorMessage = `Upload failed (${xhr.status})`;
-        try {
-          const errorData = JSON.parse(xhr.responseText);
-          errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
-        } catch {
-          if (xhr.status === 413) {
-            errorMessage = "File too large. Please reduce the file size or upload fewer files at once.";
-          } else if (xhr.status === 415) {
-            errorMessage = "Unsupported file format.";
-          } else if (xhr.status === 401) {
-            errorMessage = "Authentication required. Please log in again.";
-          } else if (xhr.status === 403) {
-            errorMessage = "Permission denied.";
-          } else if (xhr.status >= 500) {
-            errorMessage = "Server error. Please try again later.";
-          }
-        }
-        onProgress?.({
-          loaded: 0,
-          total: totalSize,
-          percentage: 0,
-          status: "error",
-          error: errorMessage,
-        });
-        reject(new Error(errorMessage));
+        errorMessage = data?.message || data?.detail || data?.error || `Upload failed (${status})`;
       }
-    });
+    } else if (error.request) {
+      // Request was made but no response
+      errorMessage = "Network error. Please check your connection and try again.";
+    } else {
+      errorMessage = error.message || "Upload failed";
+    }
 
-    // Handle network errors
-    xhr.addEventListener("error", () => {
-      const errorMessage = "Network error. Please check your connection and try again.";
-      onProgress?.({
-        loaded: 0,
-        total: totalSize,
-        percentage: 0,
-        status: "error",
-        error: errorMessage,
-      });
-      reject(new Error(errorMessage));
-    });
-
-    // Handle timeout
-    xhr.addEventListener("timeout", () => {
-      const errorMessage = "Upload timed out. The file may be too large or the connection is slow.";
-      onProgress?.({
-        loaded: 0,
-        total: totalSize,
-        percentage: 0,
-        status: "error",
-        error: errorMessage,
-      });
-      reject(new Error(errorMessage));
-    });
-
-    // Handle abort
-    xhr.addEventListener("abort", () => {
-      onProgress?.({
-        loaded: 0,
-        total: totalSize,
-        percentage: 0,
-        status: "error",
-        error: "Upload cancelled",
-      });
-      reject(new Error("Upload cancelled"));
-    });
-
-    // Set initial progress
     onProgress?.({
       loaded: 0,
       total: totalSize,
       percentage: 0,
-      status: "uploading",
-      currentFile: files[0]?.name,
+      status: "error",
+      error: errorMessage,
     });
 
-    // Open connection
-    xhr.open("POST", `${baseURL}/api/admin/albums/${albumId}/items`);
-    xhr.timeout = UPLOAD_TIMEOUT;
-
-    // Set auth header if token exists
-    if (token) {
-      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-    }
-
-    // Send the request - don't set Content-Type, browser will set it with boundary
-    xhr.send(fd);
-  });
+    throw new Error(errorMessage);
+  }
 }
 
 /**

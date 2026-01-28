@@ -36,6 +36,22 @@ const btnPrimary = `${btnBase} bg-indigo-600 hover:bg-indigo-700 text-white px-4
 const btnGhost = `${btnBase} border border-white/15 bg-white/5 hover:bg-white/10 text-white/90 px-3 py-2`;
 const btnDanger = `${btnBase} bg-red-600/90 hover:bg-red-600 text-white px-3 py-2`;
 
+/* ---------- Helper to build full URL ---------- */
+function toFullUrl(url: string | undefined | null): string {
+  if (!url) return "";
+  // If already absolute URL, return as-is
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  // Get the API base URL from environment or use default
+  const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || "";
+  // If relative URL, prepend API base
+  if (url.startsWith("/")) {
+    return apiBase ? `${apiBase}${url}` : url;
+  }
+  return apiBase ? `${apiBase}/${url}` : `/${url}`;
+}
+
 export default function AdminAlbumDetail() {
   const { id } = useParams<{ id: string }>();
   const albumId = Number(id);
@@ -147,7 +163,7 @@ export default function AdminAlbumDetail() {
     }
   }, []);
 
-  // Computed
+  // Computed - separate images and videos
   const items = useMemo(() => itemsQuery.data ?? [], [itemsQuery.data]);
   const images = useMemo(() => items.filter((i) => i.kind === "IMAGE"), [items]);
   const videos = useMemo(() => items.filter((i) => i.kind === "VIDEO"), [items]);
@@ -410,39 +426,116 @@ export default function AdminAlbumDetail() {
         </div>
       )}
 
-      {/* Media Grid */}
-      {itemsQuery.isLoading ? (
+      {/* Loading state for items */}
+      {itemsQuery.isLoading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-white/50" />
         </div>
-      ) : items.length === 0 ? (
+      )}
+
+      {/* Empty state */}
+      {!itemsQuery.isLoading && items.length === 0 && (
         <div className="text-center py-12">
           <ImageIcon size={48} className="mx-auto text-white/20 mb-4" />
           <h3 className="text-lg font-semibold text-white/80">No media yet</h3>
           <p className="text-white/50 mt-1">Upload some images or videos to get started</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {items.map((item) => (
-            <MediaCard
-              key={item.id}
-              item={item}
-              onDelete={() => {
-                if (confirm("Delete this item?")) {
-                  deleteMutation.mutate(item.id);
-                }
-              }}
-              isDeleting={deleteMutation.isPending}
-            />
-          ))}
+      )}
+
+      {/* ==================== TWO CATEGORY TABLES ==================== */}
+      {!itemsQuery.isLoading && items.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* ========== PHOTOS TABLE ========== */}
+          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0f2139] to-[#1a3a5c] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+                  <span className="text-xl">📷</span>
+                </div>
+                <h2 className="text-xl font-bold text-white">Photos</h2>
+              </div>
+              <span className="px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 text-sm font-bold border border-blue-500/30">
+                {images.length}
+              </span>
+            </div>
+
+            {/* Content */}
+            <div className="p-4">
+              {images.length === 0 ? (
+                <div className="text-center py-8">
+                  <ImageIcon size={32} className="mx-auto text-white/20 mb-2" />
+                  <p className="text-white/50 text-sm">No photos uploaded yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
+                  {images.map((item) => (
+                    <ImageCard
+                      key={item.id}
+                      item={item}
+                      onDelete={() => {
+                        if (confirm("Delete this image?")) {
+                          deleteMutation.mutate(item.id);
+                        }
+                      }}
+                      isDeleting={deleteMutation.isPending}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ========== VIDEOS TABLE ========== */}
+          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0f2139] to-[#1a3a5c] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
+                  <span className="text-xl">🎥</span>
+                </div>
+                <h2 className="text-xl font-bold text-white">Videos</h2>
+              </div>
+              <span className="px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-300 text-sm font-bold border border-purple-500/30">
+                {videos.length}
+              </span>
+            </div>
+
+            {/* Content */}
+            <div className="p-4">
+              {videos.length === 0 ? (
+                <div className="text-center py-8">
+                  <Film size={32} className="mx-auto text-white/20 mb-2" />
+                  <p className="text-white/50 text-sm">No videos uploaded yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
+                  {videos.map((item) => (
+                    <VideoCard
+                      key={item.id}
+                      item={item}
+                      onDelete={() => {
+                        if (confirm("Delete this video?")) {
+                          deleteMutation.mutate(item.id);
+                        }
+                      }}
+                      isDeleting={deleteMutation.isPending}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
       )}
     </div>
   );
 }
 
-/* ---------- Media Card Component ---------- */
-function MediaCard({
+/* ==================== IMAGE CARD COMPONENT ==================== */
+function ImageCard({
   item,
   onDelete,
   isDeleting,
@@ -452,64 +545,140 @@ function MediaCard({
   isDeleting: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  
+  const imageUrl = toFullUrl(item.thumbUrl || item.url);
 
   return (
-    <div className="group relative rounded-xl overflow-hidden bg-white/5 border border-white/10 hover:border-white/20 transition-all">
-      <div className="aspect-square">
-        {item.kind === "VIDEO" ? (
-          <div className="w-full h-full bg-purple-900/20 flex items-center justify-center relative">
-            <video
-              src={item.url}
-              className="w-full h-full object-cover"
-              preload="metadata"
-              muted
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
-                <Film size={20} className="text-white" />
-              </div>
-            </div>
-          </div>
-        ) : imgError ? (
-          <div className="w-full h-full flex items-center justify-center bg-white/5">
-            <ImageIcon size={24} className="text-white/30" />
-          </div>
-        ) : (
-          <img
-            src={item.thumbUrl || item.url}
-            alt={item.title || "Media"}
-            className="w-full h-full object-cover"
-            onError={() => setImgError(true)}
-          />
-        )}
-      </div>
+    <div className="group relative rounded-xl overflow-hidden bg-black/30 border border-white/10 hover:border-blue-500/50 transition-all aspect-square">
+      {/* Loading placeholder */}
+      {!imgLoaded && !imgError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/5">
+          <Loader2 size={20} className="animate-spin text-white/30" />
+        </div>
+      )}
+      
+      {/* Error state */}
+      {imgError ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/5">
+          <ImageIcon size={24} className="text-white/30 mb-1" />
+          <span className="text-xs text-white/40">Failed to load</span>
+        </div>
+      ) : (
+        <img
+          src={imageUrl}
+          alt={item.title || "Photo"}
+          className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${
+            imgLoaded ? "opacity-100" : "opacity-0"
+          }`}
+          onLoad={() => setImgLoaded(true)}
+          onError={() => setImgError(true)}
+        />
+      )}
 
-      {/* Overlay with delete button */}
-      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+      {/* Hover overlay with delete button */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
         <button
-          onClick={onDelete}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
           disabled={isDeleting}
-          className={`${btnDanger} ${isDeleting ? "opacity-50" : ""}`}
+          className={`${btnDanger} text-xs px-3 py-1.5 ${isDeleting ? "opacity-50" : ""}`}
         >
           {isDeleting ? (
-            <Loader2 size={16} className="animate-spin" />
+            <Loader2 size={14} className="animate-spin" />
           ) : (
-            <Trash2 size={16} />
+            <Trash2 size={14} />
           )}
+          <span>Delete</span>
         </button>
       </div>
+    </div>
+  );
+}
 
-      {/* Type badge */}
-      <div className="absolute top-2 left-2">
-        <span
-          className={`text-xs px-2 py-1 rounded-full ${
-            item.kind === "VIDEO"
-              ? "bg-purple-500/80 text-white"
-              : "bg-blue-500/80 text-white"
+/* ==================== VIDEO CARD COMPONENT ==================== */
+function VideoCard({
+  item,
+  onDelete,
+  isDeleting,
+}: {
+  item: AdminAlbumItemDTO;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
+  const [videoError, setVideoError] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  
+  const videoUrl = toFullUrl(item.url);
+  const thumbUrl = item.thumbUrl ? toFullUrl(item.thumbUrl) : null;
+
+  return (
+    <div className="group relative rounded-xl overflow-hidden bg-black/30 border border-white/10 hover:border-purple-500/50 transition-all aspect-square">
+      {/* Loading placeholder */}
+      {!videoLoaded && !videoError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/5">
+          <Loader2 size={20} className="animate-spin text-white/30" />
+        </div>
+      )}
+
+      {/* Error state */}
+      {videoError ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/5">
+          <Film size={24} className="text-white/30 mb-1" />
+          <span className="text-xs text-white/40">Failed to load</span>
+        </div>
+      ) : thumbUrl ? (
+        // Show thumbnail if available
+        <img
+          src={thumbUrl}
+          alt={item.title || "Video thumbnail"}
+          className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${
+            videoLoaded ? "opacity-100" : "opacity-0"
           }`}
+          onLoad={() => setVideoLoaded(true)}
+          onError={() => setVideoError(true)}
+        />
+      ) : (
+        // Show video preview
+        <video
+          src={videoUrl}
+          className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${
+            videoLoaded ? "opacity-100" : "opacity-0"
+          }`}
+          preload="metadata"
+          muted
+          playsInline
+          onLoadedData={() => setVideoLoaded(true)}
+          onError={() => setVideoError(true)}
+        />
+      )}
+
+      {/* Play icon overlay */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
+          <span className="text-white text-xl ml-1">▶</span>
+        </div>
+      </div>
+
+      {/* Hover overlay with delete button */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          disabled={isDeleting}
+          className={`${btnDanger} text-xs px-3 py-1.5 ${isDeleting ? "opacity-50" : ""}`}
         >
-          {item.kind === "VIDEO" ? "Video" : "Image"}
-        </span>
+          {isDeleting ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Trash2 size={14} />
+          )}
+          <span>Delete</span>
+        </button>
       </div>
     </div>
   );
