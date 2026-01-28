@@ -43,13 +43,20 @@ function toFullUrl(url: string | undefined | null): string {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
-  // Get the API base URL from environment or use default
-  const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || "";
-  // If relative URL, prepend API base
-  if (url.startsWith("/")) {
-    return apiBase ? `${apiBase}${url}` : url;
-  }
-  return apiBase ? `${apiBase}/${url}` : `/${url}`;
+  
+  // Get the API base URL from environment
+  // Priority: VITE_API_URL > VITE_BACKEND_URL > window.location.origin (same-origin fallback)
+  const apiBase = 
+    import.meta.env.VITE_API_URL || 
+    import.meta.env.VITE_BACKEND_URL || 
+    (typeof window !== "undefined" ? window.location.origin : "");
+  
+  // Ensure URL starts with /
+  const normalizedUrl = url.startsWith("/") ? url : `/${url}`;
+  
+  // If we have an API base, use it; otherwise return relative URL
+  // This ensures the browser resolves it against the current origin
+  return apiBase ? `${apiBase}${normalizedUrl}` : normalizedUrl;
 }
 
 export default function AdminAlbumDetail() {
@@ -548,6 +555,14 @@ function ImageCard({
   const [imgLoaded, setImgLoaded] = useState(false);
   
   const imageUrl = toFullUrl(item.thumbUrl || item.url);
+  
+  // Debug logging - remove in production
+  console.log("ImageCard rendering:", { 
+    id: item.id, 
+    originalUrl: item.url, 
+    thumbUrl: item.thumbUrl,
+    resolvedUrl: imageUrl 
+  });
 
   return (
     <div className="group relative rounded-xl overflow-hidden bg-black/30 border border-white/10 hover:border-blue-500/50 transition-all aspect-square">
@@ -563,6 +578,9 @@ function ImageCard({
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/5">
           <ImageIcon size={24} className="text-white/30 mb-1" />
           <span className="text-xs text-white/40">Failed to load</span>
+          <span className="text-[10px] text-white/30 mt-1 px-2 truncate max-w-full" title={imageUrl}>
+            {imageUrl.slice(-40)}
+          </span>
         </div>
       ) : (
         <img
@@ -572,7 +590,11 @@ function ImageCard({
             imgLoaded ? "opacity-100" : "opacity-0"
           }`}
           onLoad={() => setImgLoaded(true)}
-          onError={() => setImgError(true)}
+          onError={(e) => {
+            console.error("Image load error:", imageUrl, e);
+            setImgError(true);
+          }}
+          crossOrigin="anonymous"
         />
       )}
 
@@ -613,6 +635,15 @@ function VideoCard({
   
   const videoUrl = toFullUrl(item.url);
   const thumbUrl = item.thumbUrl ? toFullUrl(item.thumbUrl) : null;
+  
+  // Debug logging - remove in production
+  console.log("VideoCard rendering:", { 
+    id: item.id, 
+    originalUrl: item.url, 
+    thumbUrl: item.thumbUrl,
+    resolvedVideoUrl: videoUrl,
+    resolvedThumbUrl: thumbUrl
+  });
 
   return (
     <div className="group relative rounded-xl overflow-hidden bg-black/30 border border-white/10 hover:border-purple-500/50 transition-all aspect-square">
@@ -628,6 +659,9 @@ function VideoCard({
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/5">
           <Film size={24} className="text-white/30 mb-1" />
           <span className="text-xs text-white/40">Failed to load</span>
+          <span className="text-[10px] text-white/30 mt-1 px-2 truncate max-w-full" title={videoUrl}>
+            {videoUrl.slice(-40)}
+          </span>
         </div>
       ) : thumbUrl ? (
         // Show thumbnail if available
@@ -638,7 +672,11 @@ function VideoCard({
             videoLoaded ? "opacity-100" : "opacity-0"
           }`}
           onLoad={() => setVideoLoaded(true)}
-          onError={() => setVideoError(true)}
+          onError={(e) => {
+            console.error("Video thumbnail load error:", thumbUrl, e);
+            setVideoError(true);
+          }}
+          crossOrigin="anonymous"
         />
       ) : (
         // Show video preview
@@ -651,7 +689,11 @@ function VideoCard({
           muted
           playsInline
           onLoadedData={() => setVideoLoaded(true)}
-          onError={() => setVideoError(true)}
+          onError={(e) => {
+            console.error("Video load error:", videoUrl, e);
+            setVideoError(true);
+          }}
+          crossOrigin="anonymous"
         />
       )}
 
