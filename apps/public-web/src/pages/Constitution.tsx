@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-
-const PDF_URL = "/src/assets/Constitution_Liberia.pdf";
+import constitutionPdf from "../assets/Constitution_Liberia.pdf";
 
 export default function Constitution() {
   return (
@@ -22,20 +21,20 @@ export default function Constitution() {
         </div>
 
         <div className="cons__actions">
-          <a href={PDF_URL} className="cons__download" download>
+          <a href={constitutionPdf} className="cons__download" download="ULAN_Constitution.pdf">
             <span className="downloadIcon">📥</span>
             <span>Download Constitution PDF</span>
           </a>
         </div>
 
         <div className="cons__viewer">
-          <object data={PDF_URL} type="application/pdf" className="cons__object">
+          <object data={constitutionPdf} type="application/pdf" className="cons__object">
             <div className="cons__fallback">
               <div className="fallback__icon">📄</div>
               <p className="fallback__text">
                 PDF preview not available in your browser.
               </p>
-              <a href={PDF_URL} className="fallback__link" download>
+              <a href={constitutionPdf} className="fallback__link" download="ULAN_Constitution.pdf">
                 Click here to download the PDF
               </a>
             </div>
