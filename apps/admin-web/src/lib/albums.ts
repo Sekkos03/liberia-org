@@ -1,6 +1,5 @@
 // admin-web/src/lib/albums.ts
 import { http, type Page } from "./events";
-import axios from "axios";
 
 /* ----------------------------- Album-typer ----------------------------- */
 
@@ -55,8 +54,8 @@ export const MAX_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB for images
 export const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB for videos
 export const MAX_TOTAL_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024; // 2GB total per request
 
-// Upload timeout (in milliseconds)
-export const UPLOAD_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+// Upload timeout (in milliseconds) - 10 minutes
+export const UPLOAD_TIMEOUT = 10 * 60 * 1000;
 
 /* ----------------------------- Validation ----------------------------- */
 
@@ -70,37 +69,36 @@ export function validateFile(file: File): FileValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Check file type
+  // Check file type by MIME or extension
   const isImage = SUPPORTED_IMAGE_TYPES.includes(file.type);
   const isVideo = SUPPORTED_VIDEO_TYPES.includes(file.type);
 
-  if (!isImage && !isVideo) {
-    // Check by extension as fallback
-    const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "heic", "heif"];
-    const videoExts = ["mp4", "webm", "ogg", "mov", "avi", "mkv", "3gp", "3g2"];
+  // Fallback: check by extension
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "heic", "heif"];
+  const videoExts = ["mp4", "webm", "ogg", "mov", "avi", "mkv", "3gp", "3g2"];
+  const isImageByExt = imageExts.includes(ext);
+  const isVideoByExt = videoExts.includes(ext);
 
-    if (imageExts.includes(ext)) {
-      warnings.push(`File type "${file.type}" not recognized, but extension .${ext} looks like an image.`);
-    } else if (videoExts.includes(ext)) {
-      warnings.push(`File type "${file.type}" not recognized, but extension .${ext} looks like a video.`);
-    } else {
-      errors.push(
-        `Unsupported file type: ${file.type || "unknown"}. ` +
-          `Supported: Images (JPEG, PNG, GIF, WebP, HEIC) and Videos (MP4, WebM, MOV, AVI, MKV).`
-      );
-    }
+  if (!isImage && !isVideo && !isImageByExt && !isVideoByExt) {
+    errors.push(
+      `Unsupported file type: ${file.type || "unknown"}. ` +
+        `Supported: Images (JPEG, PNG, GIF, WebP, HEIC) and Videos (MP4, WebM, MOV, AVI, MKV).`
+    );
+  } else if (!isImage && !isVideo && (isImageByExt || isVideoByExt)) {
+    warnings.push(`File type "${file.type}" not recognized, but extension .${ext} looks valid.`);
   }
 
-  // Check file size
-  const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+  // Determine if video for size check
+  const treatAsVideo = isVideo || isVideoByExt;
+  const maxSize = treatAsVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
   const maxSizeMB = maxSize / (1024 * 1024);
 
   if (file.size > maxSize) {
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
     errors.push(
       `File "${file.name}" is too large (${fileSizeMB}MB). ` +
-        `Maximum size for ${isVideo ? "videos" : "images"} is ${maxSizeMB}MB.`
+        `Maximum size for ${treatAsVideo ? "videos" : "images"} is ${maxSizeMB}MB.`
     );
   }
 
@@ -309,7 +307,24 @@ export type UploadProgress = {
 export type UploadProgressCallback = (progress: UploadProgress) => void;
 
 /**
- * Upload album items with progress tracking and better error handling
+ * Get auth token from localStorage or sessionStorage
+ */
+function getAuthToken(): string | null {
+  // Try common token storage locations
+  const token = 
+    localStorage.getItem("token") ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("jwt") ||
+    sessionStorage.getItem("token") ||
+    sessionStorage.getItem("authToken");
+  
+  return token;
+}
+
+/**
+ * Upload album items with progress tracking using XMLHttpRequest
+ * This is more reliable than axios for large file uploads with progress
  */
 export async function uploadAlbumItemsAdmin(
   albumId: number,
@@ -340,7 +355,113 @@ export async function uploadAlbumItemsAdmin(
 
   const totalSize = files.reduce((sum, f) => sum + f.size, 0);
 
-  try {
+  // Get base URL from axios instance
+  const baseURL = http.defaults.baseURL || "";
+  
+  // Get auth token
+  const token = getAuthToken();
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    // Track upload progress
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        const percentage = Math.round((event.loaded / event.total) * 100);
+        onProgress?.({
+          loaded: event.loaded,
+          total: event.total,
+          percentage,
+          status: percentage >= 100 ? "processing" : "uploading",
+          currentFile: files[0]?.name,
+        });
+      }
+    });
+
+    // Handle successful completion
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          onProgress?.({
+            loaded: totalSize,
+            total: totalSize,
+            percentage: 100,
+            status: "complete",
+          });
+          resolve(unwrap(data, "items").map(normalizeAdminItem));
+        } catch (e) {
+          console.error("Failed to parse response:", xhr.responseText);
+          reject(new Error("Failed to parse server response"));
+        }
+      } else {
+        let errorMessage = `Upload failed (${xhr.status})`;
+        try {
+          const errorData = JSON.parse(xhr.responseText);
+          errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
+        } catch {
+          if (xhr.status === 413) {
+            errorMessage = "File too large. Please reduce the file size or upload fewer files at once.";
+          } else if (xhr.status === 415) {
+            errorMessage = "Unsupported file format.";
+          } else if (xhr.status === 401) {
+            errorMessage = "Authentication required. Please log in again.";
+          } else if (xhr.status === 403) {
+            errorMessage = "Permission denied.";
+          } else if (xhr.status >= 500) {
+            errorMessage = "Server error. Please try again later.";
+          }
+        }
+        onProgress?.({
+          loaded: 0,
+          total: totalSize,
+          percentage: 0,
+          status: "error",
+          error: errorMessage,
+        });
+        reject(new Error(errorMessage));
+      }
+    });
+
+    // Handle network errors
+    xhr.addEventListener("error", () => {
+      const errorMessage = "Network error. Please check your connection and try again.";
+      onProgress?.({
+        loaded: 0,
+        total: totalSize,
+        percentage: 0,
+        status: "error",
+        error: errorMessage,
+      });
+      reject(new Error(errorMessage));
+    });
+
+    // Handle timeout
+    xhr.addEventListener("timeout", () => {
+      const errorMessage = "Upload timed out. The file may be too large or the connection is slow.";
+      onProgress?.({
+        loaded: 0,
+        total: totalSize,
+        percentage: 0,
+        status: "error",
+        error: errorMessage,
+      });
+      reject(new Error(errorMessage));
+    });
+
+    // Handle abort
+    xhr.addEventListener("abort", () => {
+      onProgress?.({
+        loaded: 0,
+        total: totalSize,
+        percentage: 0,
+        status: "error",
+        error: "Upload cancelled",
+      });
+      reject(new Error("Upload cancelled"));
+    });
+
+    // Set initial progress
     onProgress?.({
       loaded: 0,
       total: totalSize,
@@ -349,62 +470,18 @@ export async function uploadAlbumItemsAdmin(
       currentFile: files[0]?.name,
     });
 
-    const res = await http.post(`/api/admin/albums/${albumId}/items`, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-      timeout: UPLOAD_TIMEOUT,
-      onUploadProgress: (progressEvent) => {
-        const loaded = progressEvent.loaded || 0;
-        const total = progressEvent.total || totalSize;
-        const percentage = Math.round((loaded / total) * 100);
+    // Open connection
+    xhr.open("POST", `${baseURL}/api/admin/albums/${albumId}/items`);
+    xhr.timeout = UPLOAD_TIMEOUT;
 
-        onProgress?.({
-          loaded,
-          total,
-          percentage,
-          status: percentage >= 100 ? "processing" : "uploading",
-          currentFile: files[0]?.name,
-        });
-      },
-    });
-
-    onProgress?.({
-      loaded: totalSize,
-      total: totalSize,
-      percentage: 100,
-      status: "complete",
-    });
-
-    return unwrap(res.data, "items").map(normalizeAdminItem);
-  } catch (error: any) {
-    let errorMessage = "Upload failed";
-
-    if (axios.isAxiosError(error)) {
-      if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
-        errorMessage = "Upload timed out. The file may be too large or the connection is slow.";
-      } else if (error.response?.status === 413) {
-        errorMessage = "File too large. Please reduce the file size or upload fewer files at once.";
-      } else if (error.response?.status === 415) {
-        errorMessage = "Unsupported file format. Please use supported image or video formats.";
-      } else if (error.response?.status === 500) {
-        errorMessage =
-          "Server error during upload. This may be due to file size limits. Try uploading smaller files.";
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+    // Set auth header if token exists
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     }
 
-    onProgress?.({
-      loaded: 0,
-      total: totalSize,
-      percentage: 0,
-      status: "error",
-      error: errorMessage,
-    });
-
-    throw new Error(errorMessage);
-  }
+    // Send the request - don't set Content-Type, browser will set it with boundary
+    xhr.send(fd);
+  });
 }
 
 /**
