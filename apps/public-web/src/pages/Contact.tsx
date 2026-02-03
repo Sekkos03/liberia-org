@@ -11,8 +11,6 @@ const MAX_MSG = 2000;
 const CONTACT_INFO = {
   phone: "+47 966 94 706",
   email: "Uliberians1847@yahoo.com",
-  account: "1503.50.51942",
-  vipps: "75356",
   org: "992 826 363",
 };
 
@@ -108,8 +106,6 @@ export default function Contact() {
   const contactItems = [
     { key: "phone", icon: PhoneIcon, label: "Phone", value: CONTACT_INFO.phone, action: `tel:${CONTACT_INFO.phone.replace(/\s/g, "")}` },
     { key: "email", icon: MailIcon, label: "Email", value: CONTACT_INFO.email, action: `mailto:${CONTACT_INFO.email}` },
-    { key: "account", icon: BankIcon, label: "Account Number", value: CONTACT_INFO.account },
-    { key: "vipps", icon: VippsIcon, label: "VIPPS", value: CONTACT_INFO.vipps },
     { key: "org", icon: OrgIcon, label: "Organization Nr.", value: CONTACT_INFO.org },
   ];
 
@@ -400,24 +396,6 @@ function MailIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="4" width="20" height="16" rx="2" />
       <path d="m22 7-10 5L2 7" />
-    </svg>
-  );
-}
-
-function BankIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="5" width="20" height="14" rx="2" />
-      <path d="M2 10h20" />
-    </svg>
-  );
-}
-
-function VippsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 12c3 5 13 5 16 0" />
-      <path d="M8 12c1.5 2.5 6.5 2.5 8 0" />
     </svg>
   );
 }
